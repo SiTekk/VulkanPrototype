@@ -15,15 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\VulkanPrototypeCode\src\main.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\VulkanPrototypeCode\src\VulkanPrototype.cpp">
+    <ClCompile Include="VulkanPrototype.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\VulkanPrototypeCode\src\VulkanPrototype.h">
+    <ClInclude Include="VulkanPrototype.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
