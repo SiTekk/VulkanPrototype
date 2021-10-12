@@ -41,6 +41,8 @@ namespace VulkanPrototype
         VkInstance Instance;
         VkQueue Queue;
         VkSurfaceKHR Surface;
+        VkSwapchainKHR Swapchain;
+        std::vector<VkImageView> ImageViews;
 
     private:
 
@@ -55,6 +57,11 @@ namespace VulkanPrototype
         /// </summary>
         /// <param name="instanceLayers">Der Vektor mit den Namen der Layers</param>
         bool checkInstanceLayerSupport(std::vector<const char *> instanceLayers);
+
+        /// <summary>
+        /// Überprüft die Capabiliteis des Surfaces.
+        /// </summary>
+        void checkSurfaceCapabilities(VkPhysicalDevice physicalDevice);
 
         /// <summary>
         /// Löscht die nicht mehr benötigten GLFW Komponenten und gibt den Arbeitsspeicher wieder frei.
@@ -94,7 +101,7 @@ namespace VulkanPrototype
 
         struct uSize
         {
-            uint32_t x, y;
+            uint32_t width, height;
         } windowSize;
     };
 }
