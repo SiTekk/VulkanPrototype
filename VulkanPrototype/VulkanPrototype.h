@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 #define VULKANPROTOTYPE_VERSION VK_MAKE_VERSION(0, 1, 0)
 
@@ -98,6 +99,8 @@ namespace VulkanPrototype
         /// </summary>
         /// <param name="physicalDevice">Das PhysicalDevice dessen QueueFamilies untersucht werden soll.</param>
         VkDeviceQueueCreateInfo pickQueueFamily(VkPhysicalDevice physicalDevice);
+
+        std::vector<char> readFile(const std::string& filename);
 
         struct uSize
         {

@@ -129,7 +129,7 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
-        for (int i = 0; i < ImageViews.size(); i++)
+        for (uint32_t i = 0; i < ImageViews.size(); i++)
             vkDestroyImageView(Device, ImageViews[i], nullptr);
         vkDestroySwapchainKHR(Device, Swapchain, nullptr);
         vkDestroyDevice(Device, nullptr);
@@ -143,6 +143,7 @@ namespace VulkanPrototype
     {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         Window = glfwCreateWindow(windowSize.width, windowSize.height, "VulkanPrototype", nullptr, nullptr);
 
@@ -287,7 +288,7 @@ namespace VulkanPrototype
 
         ImageViews.resize(amountOfImagesInSwapchain);
 
-        for (int i = 0; i < amountOfImagesInSwapchain; i++)
+        for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
         {
 
             VkImageViewCreateInfo imageViewCreateInfo =
@@ -317,6 +318,16 @@ namespace VulkanPrototype
 
             result = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &ImageViews[i]);
             EvaluteVulkanResult(result);
+        }
+        try
+        {
+            std::vector<char> shaderCodeVert = readFile("vert.spv");
+            std::vector<char> shaderCodeFrag = readFile("frag.spv");
+        }
+        catch (std::exception& ex)
+        {
+            std::cout << ex.what() << std::endl;
+            EvaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
         }
 
         return 0;
@@ -395,5 +406,24 @@ namespace VulkanPrototype
             throw std::logic_error("No fitting QueueFamily was found.");
 
         return deviceQueueCreateInfo;
+    }
+    std::vector<char> VulkanPrototype::readFile(const std::string& filename)
+    {
+        std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+        if (file)
+        {
+            size_t fileSize = static_cast<size_t>(file.tellg());
+            file.seekg(0);
+            std::vector<char> fileBuffer(fileSize);
+            file.read(fileBuffer.data(), fileSize);
+            file.close();
+
+            return fileBuffer;
+        }
+        else
+        {
+            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht geöffnet werden!");
+        }
     }
 }
