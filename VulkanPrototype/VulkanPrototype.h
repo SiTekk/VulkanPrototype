@@ -41,6 +41,7 @@ namespace VulkanPrototype
         VkDevice Device;
         VkInstance Instance;
         VkQueue Queue;
+        VkShaderModule ShaderModuleVert, ShaderModuleFrag;
         VkSurfaceKHR Surface;
         VkSwapchainKHR Swapchain;
         std::vector<VkImageView> ImageViews;
@@ -73,6 +74,8 @@ namespace VulkanPrototype
         /// Löscht die nicht mehr benötigten Vulkan Komponenten und gibt den Arbeitsspeicher wieder frei.
         /// </summary>
         int cleanupVulkan();
+
+        void createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule *shaderModule);
 
         /// <summary>
         /// Initialisiert die benötigten GLFW Komponenten.

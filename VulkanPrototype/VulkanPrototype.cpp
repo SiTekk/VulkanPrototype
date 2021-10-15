@@ -13,6 +13,8 @@ namespace VulkanPrototype
         Queue = nullptr;
         Surface = nullptr;
         Swapchain = nullptr;
+        ShaderModuleFrag = nullptr;
+        ShaderModuleVert = nullptr;
     }
 
     void VulkanPrototype::EvaluteVulkanResult(VkResult result)
@@ -129,6 +131,8 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
+        vkDestroyShaderModule(Device, ShaderModuleVert, nullptr);
+        vkDestroyShaderModule(Device, ShaderModuleFrag, nullptr);
         for (uint32_t i = 0; i < ImageViews.size(); i++)
             vkDestroyImageView(Device, ImageViews[i], nullptr);
         vkDestroySwapchainKHR(Device, Swapchain, nullptr);
@@ -137,6 +141,21 @@ namespace VulkanPrototype
         vkDestroyInstance(Instance, nullptr);
 
         return 0;
+    }
+
+    void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule* shaderModule)
+    {
+        VkShaderModuleCreateInfo shaderModuleCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .codeSize = shaderCodeVert.size(),
+            .pCode = (uint32_t*)shaderCodeVert.data()
+        };
+
+        VkResult result = vkCreateShaderModule(Device, &shaderModuleCreateInfo, nullptr, shaderModule);
+        EvaluteVulkanResult(result);
     }
 
     int VulkanPrototype::initializeGlfw()
@@ -319,16 +338,75 @@ namespace VulkanPrototype
             result = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &ImageViews[i]);
             EvaluteVulkanResult(result);
         }
+
+        std::vector<char> shaderCodeVert, shaderCodeFrag;
+
         try
         {
-            std::vector<char> shaderCodeVert = readFile("vert.spv");
-            std::vector<char> shaderCodeFrag = readFile("frag.spv");
+            shaderCodeVert = readFile("vert.spv");
+            shaderCodeFrag = readFile("frag.spv");
         }
         catch (std::exception& ex)
         {
             std::cout << ex.what() << std::endl;
             EvaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
         }
+
+        createShaderModule(shaderCodeVert, &ShaderModuleVert);
+        createShaderModule(shaderCodeFrag, &ShaderModuleFrag);
+
+        VkPipelineShaderStageCreateInfo shaderStageCreateInfoVert =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = ShaderModuleVert,
+            .pName = "main",
+            .pSpecializationInfo = nullptr
+        },
+        shaderStageCreateInfoFrag = 
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = ShaderModuleFrag,
+            .pName = "main",
+            .pSpecializationInfo = nullptr
+        };
+
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { shaderStageCreateInfoVert, shaderStageCreateInfoFrag };
+
+        VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .vertexBindingDescriptionCount = 0,
+            .pVertexBindingDescriptions = nullptr,
+            .vertexAttributeDescriptionCount = 0,
+            .pVertexAttributeDescriptions = nullptr
+        };
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .primitiveRestartEnable = VK_FALSE
+        };
+
+        VkViewport viewport =
+        {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = windowSize.width,
+            .height = windowSize.height,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
 
         return 0;
     }
