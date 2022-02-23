@@ -402,8 +402,8 @@ namespace VulkanPrototype
         {
             .x = 0.0f,
             .y = 0.0f,
-            .width = windowSize.width,
-            .height = windowSize.height,
+            .width = (float)windowSize.width,
+            .height = (float)windowSize.height,
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
