@@ -21,9 +21,6 @@ namespace VulkanPrototype
     {
         if (result != VK_SUCCESS)
         {
-#ifdef _WIN32
-            __debugbreak();
-#endif
             std::cout << result;
         }
     }
@@ -181,7 +178,7 @@ namespace VulkanPrototype
             .applicationVersion = VULKANPROTOTYPE_VERSION,
             .pEngineName = nullptr,
             .engineVersion = 0,
-            .apiVersion = VK_API_VERSION_1_2
+            .apiVersion = VK_API_VERSION_1_3
         };
 
         std::vector<const char*> instanceLayers = { "VK_LAYER_KHRONOS_validation" };
@@ -485,6 +482,7 @@ namespace VulkanPrototype
 
         return deviceQueueCreateInfo;
     }
+
     std::vector<char> VulkanPrototype::readFile(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::binary | std::ios::ate);
