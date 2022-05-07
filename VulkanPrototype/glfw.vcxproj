@@ -22,7 +22,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{709ACA15-1268-34DE-8349-40764E3449D7}</ProjectGuid>
+    <ProjectGuid>{34FF6E13-A5E4-3C37-B382-41E58B44989F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
     <Platform>x64</Platform>
@@ -59,26 +59,26 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\Debug\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)bin\glfw\src\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">glfw.dir\Debug\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">glfw3</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\Release\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin\glfw\src\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">glfw.dir\Release\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">glfw3</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\MinSizeRel\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(SolutionDir)bin\glfw\src\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">glfw.dir\MinSizeRel\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">glfw3</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\RelWithDebInfo\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(SolutionDir)bin\glfw\src\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">glfw.dir\RelWithDebInfo\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">glfw3</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -95,10 +95,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -111,7 +111,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -128,10 +128,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -144,7 +144,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -161,10 +161,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -177,7 +177,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>
@@ -193,10 +193,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -212,7 +212,7 @@
       <UseUtf8Encoding>Always</UseUtf8Encoding>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out/src/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw/src/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -221,11 +221,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out/src/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw/src/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -234,11 +234,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out/src/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw/src/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -247,11 +247,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/out/src/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw -BC:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw --check-stamp-file C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/bin/glfw/src/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -260,7 +260,7 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\src\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>
   </ItemGroup>
@@ -299,8 +299,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\wgl_context.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\out\ZERO_CHECK.vcxproj">
-      <Project>{80188256-7584-3F17-B15D-DA7510881CAC}</Project>
+    <ProjectReference Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\ZERO_CHECK.vcxproj">
+      <Project>{FAD8AD83-44A2-3A2B-BE97-4CD53FDE3C41}</Project>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

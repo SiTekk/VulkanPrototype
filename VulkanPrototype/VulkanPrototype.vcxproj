@@ -31,7 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="glfw.vcxproj">
-      <Project>{709aca15-1268-34de-8349-40764e3449d7}</Project>
+      <Project>{34ff6e13-a5e4-3c37-b382-41e58b44989f}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -141,7 +141,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)glfw\out\src\$(ConfigurationName);$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)bin\glfw\src\$(ConfigurationName);$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -163,7 +163,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)glfw\out\src\$(ConfigurationName);$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)bin\glfw\src\$(ConfigurationName);$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
