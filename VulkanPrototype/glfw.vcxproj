@@ -95,10 +95,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -128,10 +128,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -161,10 +161,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -193,10 +193,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_GLFW_WIN32;UNICODE;_UNICODE;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src;C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)glfw\include;$(SolutionDir)glfw\src;$(SolutionDir)bin\glfw\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -208,7 +208,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\CMakeLists.txt">
+    <CustomBuild Include="'$(SolutionDir)'glfw\src\CMakeLists.txt">
       <UseUtf8Encoding>Always</UseUtf8Encoding>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
@@ -220,8 +220,8 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
@@ -233,8 +233,8 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
@@ -246,8 +246,8 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(SolutionDir)glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(SolutionDir)bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/_projects/_Privat/VulkanPrototype/VulkanPrototype/glfw/src/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
@@ -259,47 +259,47 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(SolutionDir)glfw\CMake\glfw3.pc.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(SolutionDir)bin\glfw\src\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include\GLFW\glfw3.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\include\GLFW\glfw3native.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\internal.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\platform.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\mappings.h" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\context.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\init.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\input.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\monitor.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\platform.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\vulkan.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\window.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\egl_context.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\osmesa_context.c" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\null_platform.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\null_joystick.h" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\null_init.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\null_monitor.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\null_window.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\null_joystick.c" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_time.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_thread.h" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_module.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_time.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_thread.c" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_platform.h" />
-    <ClInclude Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_joystick.h" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_init.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_joystick.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_monitor.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\win32_window.c" />
-    <ClCompile Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\glfw\src\wgl_context.c" />
+    <ClInclude Include="'$(SolutionDir)'glfw\include\GLFW\glfw3.h" />
+    <ClInclude Include="'$(SolutionDir)'glfw\include\GLFW\glfw3native.h" />
+    <ClInclude Include="$(SolutionDir)glfw\src\internal.h" />
+    <ClInclude Include="$(SolutionDir)glfw\src\platform.h" />
+    <ClInclude Include="$(SolutionDir)glfw\src\mappings.h" />
+    <ClCompile Include="$(SolutionDir)glfw\src\context.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\init.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\input.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\monitor.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\platform.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\vulkan.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\window.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\egl_context.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\osmesa_context.c" />
+    <ClInclude Include="$(SolutionDir)glfw\src\null_platform.h" />
+    <ClInclude Include="$(SolutionDir)glfw\src\null_joystick.h" />
+    <ClCompile Include="$(SolutionDir)glfw\src\null_init.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\null_monitor.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\null_window.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\null_joystick.c" />
+    <ClInclude Include="$(SolutionDir)glfw\src\win32_time.h" />
+    <ClInclude Include="$(SolutionDir)glfw\src\win32_thread.h" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_module.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_time.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_thread.c" />
+    <ClInclude Include="$(SolutionDir)glfw\src\win32_platform.h" />
+    <ClInclude Include="$(SolutionDir)glfw\src\win32_joystick.h" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_init.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_joystick.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_monitor.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\win32_window.c" />
+    <ClCompile Include="$(SolutionDir)glfw\src\wgl_context.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\_projects\_Privat\VulkanPrototype\VulkanPrototype\bin\glfw\ZERO_CHECK.vcxproj">
+    <ProjectReference Include="$(SolutionDir)bin\glfw\ZERO_CHECK.vcxproj">
       <Project>{FAD8AD83-44A2-3A2B-BE97-4CD53FDE3C41}</Project>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
