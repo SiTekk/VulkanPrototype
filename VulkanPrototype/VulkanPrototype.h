@@ -40,6 +40,7 @@ namespace VulkanPrototype
         GLFWwindow *Window;
         VkDevice Device;
         VkInstance Instance;
+        VkPipelineLayout PipelineLayout;
         VkQueue Queue;
         VkShaderModule ShaderModuleVert, ShaderModuleFrag;
         VkSurfaceKHR Surface;

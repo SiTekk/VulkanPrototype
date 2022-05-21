@@ -10,6 +10,7 @@ namespace VulkanPrototype
         Window = nullptr;
         Device = nullptr;
         Instance = nullptr;
+        PipelineLayout = nullptr;
         Queue = nullptr;
         Surface = nullptr;
         Swapchain = nullptr;
@@ -128,6 +129,7 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
+        vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
         vkDestroyShaderModule(Device, ShaderModuleVert, nullptr);
         vkDestroyShaderModule(Device, ShaderModuleFrag, nullptr);
         for (uint32_t i = 0; i < ImageViews.size(); i++)
@@ -421,6 +423,74 @@ namespace VulkanPrototype
             .scissorCount = 1,
             .pScissors = &scissor
         };
+
+        VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .depthClampEnable = VK_FALSE,
+            .rasterizerDiscardEnable = VK_FALSE,
+            .polygonMode = VK_POLYGON_MODE_FILL,
+            .cullMode = VK_CULL_MODE_BACK_BIT,
+            .frontFace = VK_FRONT_FACE_CLOCKWISE,
+            .depthBiasEnable = VK_FALSE,
+            .depthBiasConstantFactor = 0.0f,
+            .depthBiasClamp = 0.0f,
+            .depthBiasSlopeFactor = 0.0f,
+            .lineWidth = 1.0f
+        };
+
+        VkPipelineMultisampleStateCreateInfo multisampleCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+            .sampleShadingEnable = VK_FALSE,
+            .minSampleShading = 1.0f,
+            .pSampleMask = nullptr,
+            .alphaToCoverageEnable = VK_FALSE,
+            .alphaToOneEnable = VK_FALSE
+        };
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+        {
+            .blendEnable = VK_TRUE,
+            .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+            .colorBlendOp = VK_BLEND_OP_ADD,
+            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+            .alphaBlendOp = VK_BLEND_OP_ADD,
+            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+        };
+
+        VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .logicOpEnable = VK_FALSE,
+            .logicOp = VK_LOGIC_OP_NO_OP,
+            .attachmentCount = 1,
+            .pAttachments = &colorBlendAttachmentState,
+            .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f }
+        };
+
+        VkPipelineLayoutCreateInfo layoutCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .setLayoutCount = 0,
+            .pSetLayouts = nullptr,
+            .pushConstantRangeCount = 0,
+            .pPushConstantRanges = nullptr
+        };
+
+        result = vkCreatePipelineLayout(Device, &layoutCreateInfo, nullptr, &PipelineLayout);
+        EvaluteVulkanResult(result);
 
         return 0;
     }
