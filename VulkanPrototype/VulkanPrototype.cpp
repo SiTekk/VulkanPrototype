@@ -405,6 +405,23 @@ namespace VulkanPrototype
             .maxDepth = 1.0f
         };
 
+        VkRect2D scissor =
+        {
+            .offset = { 0, 0 },
+            .extent = { windowSize.width, windowSize.height }
+        };
+
+        VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .viewportCount = 1,
+            .pViewports = &viewport,
+            .scissorCount = 1,
+            .pScissors = &scissor
+        };
+
         return 0;
     }
 
