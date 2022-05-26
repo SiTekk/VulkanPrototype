@@ -39,9 +39,12 @@ namespace VulkanPrototype
         /// </summary>
         GLFWwindow *Window;
         VkDevice Device;
+        VkFormat ImageFormat;
         VkInstance Instance;
+        VkPipeline Pipeline;
         VkPipelineLayout PipelineLayout;
         VkQueue Queue;
+        VkRenderPass RenderPass;
         VkShaderModule ShaderModuleVert, ShaderModuleFrag;
         VkSurfaceKHR Surface;
         VkSwapchainKHR Swapchain;

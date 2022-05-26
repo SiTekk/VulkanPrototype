@@ -9,9 +9,12 @@ namespace VulkanPrototype
         //Werden in Separaten Funktionen initialisiert
         Window = nullptr;
         Device = nullptr;
+        ImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
         Instance = nullptr;
+        Pipeline = nullptr;
         PipelineLayout = nullptr;
         Queue = nullptr;
+        RenderPass = nullptr;
         Surface = nullptr;
         Swapchain = nullptr;
         ShaderModuleFrag = nullptr;
@@ -129,11 +132,13 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
+        vkDestroyPipeline(Device, Pipeline, nullptr);
+        vkDestroyRenderPass(Device, RenderPass, nullptr);
+        for (uint32_t i = 0; i < ImageViews.size(); i++)
+            vkDestroyImageView(Device, ImageViews[i], nullptr);
         vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
         vkDestroyShaderModule(Device, ShaderModuleVert, nullptr);
         vkDestroyShaderModule(Device, ShaderModuleFrag, nullptr);
-        for (uint32_t i = 0; i < ImageViews.size(); i++)
-            vkDestroyImageView(Device, ImageViews[i], nullptr);
         vkDestroySwapchainKHR(Device, Swapchain, nullptr);
         vkDestroyDevice(Device, nullptr);
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
@@ -278,7 +283,7 @@ namespace VulkanPrototype
             .flags = 0,
             .surface = Surface,
             .minImageCount = 3,
-            .imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+            .imageFormat = ImageFormat,
             .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
             .imageExtent = VkExtent2D {windowSize.width, windowSize.height },
             .imageArrayLayers = 1,
@@ -491,6 +496,83 @@ namespace VulkanPrototype
 
         result = vkCreatePipelineLayout(Device, &layoutCreateInfo, nullptr, &PipelineLayout);
         EvaluteVulkanResult(result);
+
+        VkAttachmentDescription attachmentDescription =
+        {
+            .flags = 0,
+            .format = ImageFormat,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        };
+
+        VkAttachmentReference attachmentReference =
+        {
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        };
+
+        VkSubpassDescription subpassDescription =
+        {
+            .flags = 0,
+            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+            .inputAttachmentCount = 0,
+            .pInputAttachments = nullptr,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &attachmentReference,
+            .pResolveAttachments = nullptr,
+            .pDepthStencilAttachment = nullptr,
+            .preserveAttachmentCount = 0,
+            .pPreserveAttachments = nullptr
+        };
+
+        VkRenderPassCreateInfo renderPassCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .attachmentCount = 1,
+            .pAttachments = &attachmentDescription,
+            .subpassCount = 1,
+            .pSubpasses = &subpassDescription,
+            .dependencyCount = 0,
+            .pDependencies = nullptr
+        };
+
+        result = vkCreateRenderPass(Device, &renderPassCreateInfo, nullptr, &RenderPass);
+        EvaluteVulkanResult(result);
+
+        VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stageCount = 2,
+            .pStages = shaderStages.data(),
+            .pVertexInputState = &vertexInputCreateInfo,
+            .pInputAssemblyState = &inputAssemblyCreateInfo,
+            .pTessellationState = nullptr,
+            .pViewportState = &viewportStateCreateInfo,
+            .pRasterizationState = &rasterizationCreateInfo,
+            .pMultisampleState = &multisampleCreateInfo,
+            .pDepthStencilState = nullptr,
+            .pColorBlendState = &colorBlendCreateInfo,
+            .pDynamicState = nullptr,
+            .layout = PipelineLayout,
+            .renderPass = RenderPass,
+            .subpass = 0,
+            .basePipelineHandle = VK_NULL_HANDLE,
+            .basePipelineIndex = -1
+        };
+
+        result = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &Pipeline);
+        EvaluteVulkanResult(result);
+
+
 
         return 0;
     }
