@@ -48,7 +48,8 @@ namespace VulkanPrototype
         VkShaderModule ShaderModuleVert, ShaderModuleFrag;
         VkSurfaceKHR Surface;
         VkSwapchainKHR Swapchain;
-        std::vector<VkImageView> ImageViews;
+        std::vector<VkFramebuffer> Framebuffers;
+        std::vector<VkImageView> ImageViews;        
 
     private:
 

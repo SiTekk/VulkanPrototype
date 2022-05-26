@@ -132,6 +132,8 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
+        for (uint32_t i = 0; i < Framebuffers.size(); i++)
+            vkDestroyFramebuffer(Device, Framebuffers[i], nullptr);
         vkDestroyPipeline(Device, Pipeline, nullptr);
         vkDestroyRenderPass(Device, RenderPass, nullptr);
         for (uint32_t i = 0; i < ImageViews.size(); i++)
@@ -572,7 +574,24 @@ namespace VulkanPrototype
         result = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &Pipeline);
         EvaluteVulkanResult(result);
 
+        Framebuffers.resize(amountOfImagesInSwapchain);
+        for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
+        {
+            VkFramebufferCreateInfo framebufferCreateInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .renderPass = RenderPass,
+                .attachmentCount = 1,
+                .pAttachments = &(ImageViews[i]),
+                .width = windowSize.width,
+                .height = windowSize.height,
+                .layers = 1
+            };
 
+            vkCreateFramebuffer(Device, &framebufferCreateInfo, nullptr, &(Framebuffers[i]));
+        }
 
         return 0;
     }
