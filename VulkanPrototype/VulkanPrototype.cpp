@@ -8,6 +8,7 @@ namespace VulkanPrototype
 
         //Werden in Separaten Funktionen initialisiert
         Window = nullptr;
+        CommandPool = nullptr;
         Device = nullptr;
         ImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
         Instance = nullptr;
@@ -132,6 +133,7 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
+        vkDestroyCommandPool(Device, CommandPool, nullptr);
         for (uint32_t i = 0; i < Framebuffers.size(); i++)
             vkDestroyFramebuffer(Device, Framebuffers[i], nullptr);
         vkDestroyPipeline(Device, Pipeline, nullptr);
@@ -591,6 +593,48 @@ namespace VulkanPrototype
             };
 
             vkCreateFramebuffer(Device, &framebufferCreateInfo, nullptr, &(Framebuffers[i]));
+        }
+
+        VkCommandPoolCreateInfo commandPoolCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = deviceQueueCreateInfo.queueFamilyIndex
+        };
+
+        result = vkCreateCommandPool(Device, &commandPoolCreateInfo, nullptr, &CommandPool);
+        EvaluteVulkanResult(result);
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .commandPool = CommandPool,
+            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = amountOfImagesInSwapchain
+        };
+
+        CommandBuffers.resize(amountOfImagesInSwapchain);
+        result = vkAllocateCommandBuffers(Device, &commandBufferAllocateInfo, CommandBuffers.data());
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = nullptr,
+            .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            .pInheritanceInfo = nullptr
+        };
+
+        for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
+        {
+            result = vkBeginCommandBuffer(CommandBuffers[i], &commandBufferBeginInfo);
+            EvaluteVulkanResult(result);
+
+
+
+            result = vkEndCommandBuffer(CommandBuffers[i]);
+            EvaluteVulkanResult(result);
         }
 
         return 0;

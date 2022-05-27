@@ -38,6 +38,7 @@ namespace VulkanPrototype
         /// Die GLFWwindow instanz, welche die größe und die Events des Fensters enthält.
         /// </summary>
         GLFWwindow *Window;
+        VkCommandPool CommandPool;
         VkDevice Device;
         VkFormat ImageFormat;
         VkInstance Instance;
@@ -48,6 +49,7 @@ namespace VulkanPrototype
         VkShaderModule ShaderModuleVert, ShaderModuleFrag;
         VkSurfaceKHR Surface;
         VkSwapchainKHR Swapchain;
+        std::vector<VkCommandBuffer> CommandBuffers;
         std::vector<VkFramebuffer> Framebuffers;
         std::vector<VkImageView> ImageViews;        
 
