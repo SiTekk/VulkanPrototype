@@ -16,6 +16,8 @@ namespace VulkanPrototype
         PipelineLayout = nullptr;
         Queue = nullptr;
         RenderPass = nullptr;
+        SemaphoreImageAvailable = nullptr;
+        SemaphoreRenderingDone = nullptr;
         Surface = nullptr;
         Swapchain = nullptr;
         ShaderModuleFrag = nullptr;
@@ -133,6 +135,8 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(Device);
 
+        vkDestroySemaphore(Device, SemaphoreRenderingDone, nullptr);
+        vkDestroySemaphore(Device, SemaphoreImageAvailable, nullptr);
         vkDestroyCommandPool(Device, CommandPool, nullptr);
         for (uint32_t i = 0; i < Framebuffers.size(); i++)
             vkDestroyFramebuffer(Device, Framebuffers[i], nullptr);
@@ -164,6 +168,11 @@ namespace VulkanPrototype
 
         VkResult result = vkCreateShaderModule(Device, &shaderModuleCreateInfo, nullptr, shaderModule);
         EvaluteVulkanResult(result);
+    }
+
+    void VulkanPrototype::drawFrame()
+    {
+
     }
 
     int VulkanPrototype::initializeGlfw()
@@ -631,11 +640,41 @@ namespace VulkanPrototype
             result = vkBeginCommandBuffer(CommandBuffers[i], &commandBufferBeginInfo);
             EvaluteVulkanResult(result);
 
+            VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
 
+            VkRenderPassBeginInfo renderPassBeginInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .pNext = nullptr,
+                .renderPass = RenderPass,
+                .framebuffer = Framebuffers[i],
+                .renderArea = {{0, 0}, {windowSize.width, windowSize.height}},
+                .clearValueCount = 1,
+                .pClearValues = &clearValue
+            };
+
+            vkCmdBeginRenderPass(CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
+            vkCmdDraw(CommandBuffers[i], 3, 1, 0, 0);
+
+            vkCmdEndRenderPass(CommandBuffers[i]);
 
             result = vkEndCommandBuffer(CommandBuffers[i]);
             EvaluteVulkanResult(result);
         }
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        result = vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &SemaphoreImageAvailable);
+        EvaluteVulkanResult(result);
+        result = vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &SemaphoreRenderingDone);
+        EvaluteVulkanResult(result);
 
         return 0;
     }
@@ -645,6 +684,7 @@ namespace VulkanPrototype
         while (!glfwWindowShouldClose(Window))
         {
             glfwPollEvents();
+            drawFrame();
         }
 
         return 0;

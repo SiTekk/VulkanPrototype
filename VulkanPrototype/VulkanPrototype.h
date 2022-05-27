@@ -46,6 +46,7 @@ namespace VulkanPrototype
         VkPipelineLayout PipelineLayout;
         VkQueue Queue;
         VkRenderPass RenderPass;
+        VkSemaphore SemaphoreImageAvailable, SemaphoreRenderingDone;
         VkShaderModule ShaderModuleVert, ShaderModuleFrag;
         VkSurfaceKHR Surface;
         VkSwapchainKHR Swapchain;
@@ -83,6 +84,8 @@ namespace VulkanPrototype
         int cleanupVulkan();
 
         void createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule *shaderModule);
+
+        void drawFrame();
 
         /// <summary>
         /// Initialisiert die benötigten GLFW Komponenten.
