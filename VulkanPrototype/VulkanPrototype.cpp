@@ -172,7 +172,26 @@ namespace VulkanPrototype
 
     void VulkanPrototype::drawFrame()
     {
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(Device, Swapchain, std::numeric_limits<uint64_t>::max(), SemaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        EvaluteVulkanResult(result);
 
+        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &SemaphoreImageAvailable,
+            .pWaitDstStageMask = waitStageMask,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &(CommandBuffers[imageIndex]),
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &SemaphoreRenderingDone
+        };
+
+        result = vkQueueSubmit(Queue, 1, &submitInfo, VK_NULL_HANDLE);
+        EvaluteVulkanResult(result);
     }
 
     int VulkanPrototype::initializeGlfw()
