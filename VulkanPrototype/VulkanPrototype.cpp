@@ -1,3 +1,6 @@
+#include <chrono>
+#include <iostream>
+
 #include "VulkanPrototype.h"
 
 namespace VulkanPrototype
@@ -191,6 +194,21 @@ namespace VulkanPrototype
         };
 
         result = vkQueueSubmit(Queue, 1, &submitInfo, VK_NULL_HANDLE);
+        EvaluteVulkanResult(result);
+
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &SemaphoreRenderingDone,
+            .swapchainCount = 1,
+            .pSwapchains = &Swapchain,
+            .pImageIndices = &imageIndex,
+            .pResults = nullptr
+        };
+
+        result = vkQueuePresentKHR(Queue, &presentInfo);
         EvaluteVulkanResult(result);
     }
 
@@ -562,6 +580,17 @@ namespace VulkanPrototype
             .pPreserveAttachments = nullptr
         };
 
+        VkSubpassDependency subpassDependency =
+        {
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dependencyFlags = 0
+        };
+
         VkRenderPassCreateInfo renderPassCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -571,8 +600,8 @@ namespace VulkanPrototype
             .pAttachments = &attachmentDescription,
             .subpassCount = 1,
             .pSubpasses = &subpassDescription,
-            .dependencyCount = 0,
-            .pDependencies = nullptr
+            .dependencyCount = 1,
+            .pDependencies = &subpassDependency
         };
 
         result = vkCreateRenderPass(Device, &renderPassCreateInfo, nullptr, &RenderPass);
@@ -675,7 +704,7 @@ namespace VulkanPrototype
             vkCmdBeginRenderPass(CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-            vkCmdDraw(CommandBuffers[i], 3, 1, 0, 0);
+            vkCmdDraw(CommandBuffers[i], 6, 1, 0, 0);
 
             vkCmdEndRenderPass(CommandBuffers[i]);
 
@@ -702,8 +731,13 @@ namespace VulkanPrototype
     {
         while (!glfwWindowShouldClose(Window))
         {
+            //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
             glfwPollEvents();
             drawFrame();
+
+            //std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            //std::cout << 1000000 / std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count() << "[fps]\n";
         }
 
         return 0;
