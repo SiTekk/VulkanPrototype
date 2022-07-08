@@ -19,6 +19,10 @@ project "ImGui"
         "imgui/imstb_rectpack.h",
         "imgui/imstb_textedit.h",
         "imgui/imstb_truetype.h",
+        "imgui/backends/imgui_impl_vulkan.h",
+        "imgui/backends/imgui_impl_vulkan.cpp",
+        "imgui/backends/imgui_impl_glfw.h",
+        "imgui/backends/imgui_impl_glfw.cpp"
     }
 
     includedirs {
