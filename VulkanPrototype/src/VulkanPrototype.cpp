@@ -397,8 +397,8 @@ namespace VulkanPrototype
 
         try
         {
-            shaderCodeVert = readFile("vert.spv");
-            shaderCodeFrag = readFile("frag.spv");
+            shaderCodeVert = readFile("shader/vert.spv");
+            shaderCodeFrag = readFile("shader/frag.spv");
         }
         catch (std::exception& ex)
         {

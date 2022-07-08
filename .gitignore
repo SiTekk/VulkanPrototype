@@ -364,3 +364,12 @@ FodyWeavers.xsd
 
 # Compiled Shader Files
 *.spv
+
+# Project Files
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
+
+#Executables
+*.exe
