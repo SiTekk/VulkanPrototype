@@ -13,6 +13,11 @@
 
 namespace VulkanPrototype
 {
+    struct WindowSpecification
+    {
+        uint32_t width, height;
+    };
+
     class VulkanPrototype
     {
 
@@ -52,14 +57,11 @@ namespace VulkanPrototype
 
         std::vector<char> readFile(const std::string& filename);
 
-        struct uSize
-        {
-            uint32_t width, height;
-        } windowSize;
-
     private:
 
         GLFWwindow* window;
+
+        WindowSpecification windowSize;
 
         VkCommandPool commandPool;
         VkDevice device;

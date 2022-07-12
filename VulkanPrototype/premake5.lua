@@ -14,6 +14,7 @@ project "VulkanPrototype"
         "../vendor/imgui",
         "../vendor/imgui/backends",
         "../vendor/glfw/include",
+        "../vendor/glm",
 
         "%{VULKAN_INCLUDE}"
     }
