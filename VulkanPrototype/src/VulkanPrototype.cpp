@@ -10,24 +10,24 @@ namespace VulkanPrototype
         windowSize = {.width = 1280, .height = 720};
 
         //Werden in Separaten Funktionen initialisiert
-        Window = nullptr;
-        CommandPool = nullptr;
-        Device = nullptr;
-        ImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
-        Instance = nullptr;
-        Pipeline = nullptr;
-        PipelineLayout = nullptr;
-        Queue = nullptr;
-        RenderPass = nullptr;
-        SemaphoreImageAvailable = nullptr;
-        SemaphoreRenderingDone = nullptr;
-        Surface = nullptr;
-        Swapchain = nullptr;
-        ShaderModuleFrag = nullptr;
-        ShaderModuleVert = nullptr;
+        window = nullptr;
+        commandPool = nullptr;
+        device = nullptr;
+        imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        instance = nullptr;
+        pipeline = nullptr;
+        pipelineLayout = nullptr;
+        queue = nullptr;
+        renderPass = nullptr;
+        semaphoreImageAvailable = nullptr;
+        semaphoreRenderingDone = nullptr;
+        surface = nullptr;
+        swapchain = nullptr;
+        shaderModuleFrag = nullptr;
+        shaderModuleVert = nullptr;
     }
 
-    void VulkanPrototype::EvaluteVulkanResult(VkResult result)
+    void VulkanPrototype::evaluteVulkanResult(VkResult result)
     {
         if (result != VK_SUCCESS)
         {
@@ -49,7 +49,7 @@ namespace VulkanPrototype
     {
         uint32_t amountOfExtensions = 0;
         VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &amountOfExtensions, nullptr);
-        EvaluteVulkanResult(result);
+        evaluteVulkanResult(result);
 
         std::vector<VkExtensionProperties> extensionProperties;
         extensionProperties.resize(amountOfExtensions);
@@ -71,20 +71,20 @@ namespace VulkanPrototype
 
         if (count != instanceExtensions.size())
             return false;
-        else
-            return true;
+        
+        return true;
     }
 
     bool VulkanPrototype::checkInstanceLayerSupport(std::vector<const char *> instanceLayers)
     {
         uint32_t amountOfLayers = 0;
         VkResult result = vkEnumerateInstanceLayerProperties(&amountOfLayers, nullptr);
-        EvaluteVulkanResult(result);
+        evaluteVulkanResult(result);
 
         std::vector<VkLayerProperties> layers;
         layers.resize(amountOfLayers);
         result = vkEnumerateInstanceLayerProperties(&amountOfLayers, layers.data());
-        EvaluteVulkanResult(result);
+        evaluteVulkanResult(result);
 
         uint32_t count = 0;
 
@@ -102,8 +102,6 @@ namespace VulkanPrototype
 
         if (count != instanceLayers.size())
             return false;
-        else
-            return true;
 
         return true;
     }
@@ -111,119 +109,54 @@ namespace VulkanPrototype
     void VulkanPrototype::checkSurfaceCapabilities(VkPhysicalDevice physicalDevice)
     {
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, Surface, &surfaceCapabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
 
         uint32_t amountOfSurfaceFormats = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, Surface, &amountOfSurfaceFormats, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, nullptr);
         std::vector<VkSurfaceFormatKHR> surfaceFormats;
         surfaceFormats.resize(amountOfSurfaceFormats);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, Surface, &amountOfSurfaceFormats, surfaceFormats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, surfaceFormats.data());
 
         uint32_t amountOFPresentModes = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, Surface, &amountOFPresentModes, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, nullptr);
         std::vector<VkPresentModeKHR> presentModes;
         presentModes.resize(amountOFPresentModes);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, Surface, &amountOFPresentModes, presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, presentModes.data());
 
         return;
     }
 
     int VulkanPrototype::cleanupGlfw()
     {
-        glfwDestroyWindow(Window);
+        glfwDestroyWindow(window);
         return 0;
     }
 
     int VulkanPrototype::cleanupVulkan()
     {
-        vkDeviceWaitIdle(Device);
+        vkDeviceWaitIdle(device);
 
-        vkDestroySemaphore(Device, SemaphoreRenderingDone, nullptr);
-        vkDestroySemaphore(Device, SemaphoreImageAvailable, nullptr);
-        vkDestroyCommandPool(Device, CommandPool, nullptr);
-        for (uint32_t i = 0; i < Framebuffers.size(); i++)
-            vkDestroyFramebuffer(Device, Framebuffers[i], nullptr);
-        vkDestroyPipeline(Device, Pipeline, nullptr);
-        vkDestroyRenderPass(Device, RenderPass, nullptr);
-        for (uint32_t i = 0; i < ImageViews.size(); i++)
-            vkDestroyImageView(Device, ImageViews[i], nullptr);
-        vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
-        vkDestroyShaderModule(Device, ShaderModuleVert, nullptr);
-        vkDestroyShaderModule(Device, ShaderModuleFrag, nullptr);
-        vkDestroySwapchainKHR(Device, Swapchain, nullptr);
-        vkDestroyDevice(Device, nullptr);
-        vkDestroySurfaceKHR(Instance, Surface, nullptr);
-        vkDestroyInstance(Instance, nullptr);
-
-        return 0;
-    }
-
-    void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule* shaderModule)
-    {
-        VkShaderModuleCreateInfo shaderModuleCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .codeSize = shaderCodeVert.size(),
-            .pCode = (uint32_t*)shaderCodeVert.data()
-        };
-
-        VkResult result = vkCreateShaderModule(Device, &shaderModuleCreateInfo, nullptr, shaderModule);
-        EvaluteVulkanResult(result);
-    }
-
-    void VulkanPrototype::drawFrame()
-    {
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(Device, Swapchain, std::numeric_limits<uint64_t>::max(), SemaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
-        EvaluteVulkanResult(result);
-
-        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        VkSubmitInfo submitInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &SemaphoreImageAvailable,
-            .pWaitDstStageMask = waitStageMask,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &(CommandBuffers[imageIndex]),
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &SemaphoreRenderingDone
-        };
-
-        result = vkQueueSubmit(Queue, 1, &submitInfo, VK_NULL_HANDLE);
-        EvaluteVulkanResult(result);
-
-        VkPresentInfoKHR presentInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &SemaphoreRenderingDone,
-            .swapchainCount = 1,
-            .pSwapchains = &Swapchain,
-            .pImageIndices = &imageIndex,
-            .pResults = nullptr
-        };
-
-        result = vkQueuePresentKHR(Queue, &presentInfo);
-        EvaluteVulkanResult(result);
-    }
-
-    int VulkanPrototype::initializeGlfw()
-    {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        Window = glfwCreateWindow(windowSize.width, windowSize.height, "VulkanPrototype", nullptr, nullptr);
+        vkDestroySemaphore(device, semaphoreRenderingDone, nullptr);
+        vkDestroySemaphore(device, semaphoreImageAvailable, nullptr);
+        vkDestroyCommandPool(device, commandPool, nullptr);
+        for (uint32_t i = 0; i < frameBuffers.size(); i++)
+            vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyRenderPass(device, renderPass, nullptr);
+        for (uint32_t i = 0; i < imageViews.size(); i++)
+            vkDestroyImageView(device, imageViews[i], nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyShaderModule(device, shaderModuleVert, nullptr);
+        vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
+        vkDestroySwapchainKHR(device, swapchain, nullptr);
+        vkDestroyDevice(device, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroyInstance(instance, nullptr);
 
         return 0;
     }
 
-    int VulkanPrototype::initializeVulkan()
+    int VulkanPrototype::createInstance()
     {
         VkResult result;
 
@@ -257,7 +190,7 @@ namespace VulkanPrototype
             std::cout << "Extension not Supported!\n";
             return -1;
         }
-        
+
         VkInstanceCreateInfo instanceCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -270,11 +203,86 @@ namespace VulkanPrototype
             .ppEnabledExtensionNames = instanceExtensions.data()
         };
 
-        result = vkCreateInstance(&instanceCreateInfo, nullptr, &Instance);
-        EvaluteVulkanResult(result);
+        result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+        evaluteVulkanResult(result);
 
-        result = glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
-        EvaluteVulkanResult(result);
+        return 0;
+    }
+
+    void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule* shaderModule)
+    {
+        VkShaderModuleCreateInfo shaderModuleCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .codeSize = shaderCodeVert.size(),
+            .pCode = (uint32_t*)shaderCodeVert.data()
+        };
+
+        VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, shaderModule);
+        evaluteVulkanResult(result);
+    }
+
+    void VulkanPrototype::drawFrame()
+    {
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(), semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        evaluteVulkanResult(result);
+
+        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreImageAvailable,
+            .pWaitDstStageMask = waitStageMask,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &(commandBuffers[imageIndex]),
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &semaphoreRenderingDone
+        };
+
+        result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+        evaluteVulkanResult(result);
+
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreRenderingDone,
+            .swapchainCount = 1,
+            .pSwapchains = &swapchain,
+            .pImageIndices = &imageIndex,
+            .pResults = nullptr
+        };
+
+        result = vkQueuePresentKHR(queue, &presentInfo);
+        evaluteVulkanResult(result);
+    }
+
+    int VulkanPrototype::initializeGlfw()
+    {
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+        window = glfwCreateWindow(windowSize.width, windowSize.height, "VulkanPrototype", nullptr, nullptr);
+
+        return 0;
+    }
+
+    int VulkanPrototype::initializeVulkan()
+    {
+        VkResult result;
+
+        if (createInstance() != 0)
+            return -1;
+
+        result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+        evaluteVulkanResult(result);
 
         VkPhysicalDevice physicalDevice = pickPhysicalDevice();
         VkPhysicalDeviceProperties properties;
@@ -307,19 +315,19 @@ namespace VulkanPrototype
             .pEnabledFeatures = &physicalDeviceFeatures
         };
 
-        result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &Device);
-        EvaluteVulkanResult(result);
+        result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
+        evaluteVulkanResult(result);
 
-        vkGetDeviceQueue(Device, 0, 0, &Queue);
+        vkGetDeviceQueue(device, 0, 0, &queue);
 
         VkBool32 surfaceSupport = false;
-        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0, Surface, &surfaceSupport);
-        EvaluteVulkanResult(result);
+        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0, surface, &surfaceSupport);
+        evaluteVulkanResult(result);
 
         if (!surfaceSupport)
         {
             std::cout << "Surface not Supported";
-            EvaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
+            evaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
             return -1;
         }
 
@@ -331,9 +339,9 @@ namespace VulkanPrototype
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext = nullptr,
             .flags = 0,
-            .surface = Surface,
+            .surface = surface,
             .minImageCount = 3,
-            .imageFormat = ImageFormat,
+            .imageFormat = imageFormat,
             .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
             .imageExtent = VkExtent2D {windowSize.width, windowSize.height },
             .imageArrayLayers = 1,
@@ -348,18 +356,18 @@ namespace VulkanPrototype
             .oldSwapchain = VK_NULL_HANDLE
         };
 
-        result = vkCreateSwapchainKHR(Device, &swapchainCreateInfo, nullptr, &Swapchain);
-        EvaluteVulkanResult(result);
+        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
+        evaluteVulkanResult(result);
 
         uint32_t amountOfImagesInSwapchain = 0;
-        result = vkGetSwapchainImagesKHR(Device, Swapchain, &amountOfImagesInSwapchain, nullptr);
-        EvaluteVulkanResult(result);
+        result = vkGetSwapchainImagesKHR(device, swapchain, &amountOfImagesInSwapchain, nullptr);
+        evaluteVulkanResult(result);
         std::vector<VkImage> swapchainImages;
         swapchainImages.resize(amountOfImagesInSwapchain);
-        result = vkGetSwapchainImagesKHR(Device, Swapchain, &amountOfImagesInSwapchain, swapchainImages.data());
-        EvaluteVulkanResult(result);
+        result = vkGetSwapchainImagesKHR(device, swapchain, &amountOfImagesInSwapchain, swapchainImages.data());
+        evaluteVulkanResult(result);
 
-        ImageViews.resize(amountOfImagesInSwapchain);
+        imageViews.resize(amountOfImagesInSwapchain);
 
         for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
         {
@@ -389,8 +397,8 @@ namespace VulkanPrototype
                 }
             };
 
-            result = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &ImageViews[i]);
-            EvaluteVulkanResult(result);
+            result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageViews[i]);
+            evaluteVulkanResult(result);
         }
 
         std::vector<char> shaderCodeVert, shaderCodeFrag;
@@ -403,11 +411,11 @@ namespace VulkanPrototype
         catch (std::exception& ex)
         {
             std::cout << ex.what() << std::endl;
-            EvaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
+            evaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
         }
 
-        createShaderModule(shaderCodeVert, &ShaderModuleVert);
-        createShaderModule(shaderCodeFrag, &ShaderModuleFrag);
+        createShaderModule(shaderCodeVert, &shaderModuleVert);
+        createShaderModule(shaderCodeFrag, &shaderModuleFrag);
 
         VkPipelineShaderStageCreateInfo shaderStageCreateInfoVert =
         {
@@ -415,7 +423,7 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .flags = 0,
             .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .module = ShaderModuleVert,
+            .module = shaderModuleVert,
             .pName = "main",
             .pSpecializationInfo = nullptr
         },
@@ -425,7 +433,7 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .flags = 0,
             .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .module = ShaderModuleFrag,
+            .module = shaderModuleFrag,
             .pName = "main",
             .pSpecializationInfo = nullptr
         };
@@ -544,13 +552,13 @@ namespace VulkanPrototype
             .pPushConstantRanges = nullptr
         };
 
-        result = vkCreatePipelineLayout(Device, &layoutCreateInfo, nullptr, &PipelineLayout);
-        EvaluteVulkanResult(result);
+        result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &pipelineLayout);
+        evaluteVulkanResult(result);
 
         VkAttachmentDescription attachmentDescription =
         {
             .flags = 0,
-            .format = ImageFormat,
+            .format = imageFormat,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -604,8 +612,8 @@ namespace VulkanPrototype
             .pDependencies = &subpassDependency
         };
 
-        result = vkCreateRenderPass(Device, &renderPassCreateInfo, nullptr, &RenderPass);
-        EvaluteVulkanResult(result);
+        result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
+        evaluteVulkanResult(result);
 
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
         {
@@ -623,17 +631,17 @@ namespace VulkanPrototype
             .pDepthStencilState = nullptr,
             .pColorBlendState = &colorBlendCreateInfo,
             .pDynamicState = nullptr,
-            .layout = PipelineLayout,
-            .renderPass = RenderPass,
+            .layout = pipelineLayout,
+            .renderPass = renderPass,
             .subpass = 0,
             .basePipelineHandle = VK_NULL_HANDLE,
             .basePipelineIndex = -1
         };
 
-        result = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &Pipeline);
-        EvaluteVulkanResult(result);
+        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
+        evaluteVulkanResult(result);
 
-        Framebuffers.resize(amountOfImagesInSwapchain);
+        frameBuffers.resize(amountOfImagesInSwapchain);
         for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
         {
             VkFramebufferCreateInfo framebufferCreateInfo =
@@ -641,15 +649,15 @@ namespace VulkanPrototype
                 .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
-                .renderPass = RenderPass,
+                .renderPass = renderPass,
                 .attachmentCount = 1,
-                .pAttachments = &(ImageViews[i]),
+                .pAttachments = &(imageViews[i]),
                 .width = windowSize.width,
                 .height = windowSize.height,
                 .layers = 1
             };
 
-            vkCreateFramebuffer(Device, &framebufferCreateInfo, nullptr, &(Framebuffers[i]));
+            vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &(frameBuffers[i]));
         }
 
         VkCommandPoolCreateInfo commandPoolCreateInfo =
@@ -660,20 +668,20 @@ namespace VulkanPrototype
             .queueFamilyIndex = deviceQueueCreateInfo.queueFamilyIndex
         };
 
-        result = vkCreateCommandPool(Device, &commandPoolCreateInfo, nullptr, &CommandPool);
-        EvaluteVulkanResult(result);
+        result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
+        evaluteVulkanResult(result);
 
         VkCommandBufferAllocateInfo commandBufferAllocateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext = nullptr,
-            .commandPool = CommandPool,
+            .commandPool = commandPool,
             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .commandBufferCount = amountOfImagesInSwapchain
         };
 
-        CommandBuffers.resize(amountOfImagesInSwapchain);
-        result = vkAllocateCommandBuffers(Device, &commandBufferAllocateInfo, CommandBuffers.data());
+        commandBuffers.resize(amountOfImagesInSwapchain);
+        result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
 
         VkCommandBufferBeginInfo commandBufferBeginInfo =
         {
@@ -685,8 +693,8 @@ namespace VulkanPrototype
 
         for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
         {
-            result = vkBeginCommandBuffer(CommandBuffers[i], &commandBufferBeginInfo);
-            EvaluteVulkanResult(result);
+            result = vkBeginCommandBuffer(commandBuffers[i], &commandBufferBeginInfo);
+            evaluteVulkanResult(result);
 
             VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -694,22 +702,22 @@ namespace VulkanPrototype
             {
                 .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                 .pNext = nullptr,
-                .renderPass = RenderPass,
-                .framebuffer = Framebuffers[i],
+                .renderPass = renderPass,
+                .framebuffer = frameBuffers[i],
                 .renderArea = {{0, 0}, {windowSize.width, windowSize.height}},
                 .clearValueCount = 1,
                 .pClearValues = &clearValue
             };
 
-            vkCmdBeginRenderPass(CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline);
-            vkCmdDraw(CommandBuffers[i], 6, 1, 0, 0);
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+            vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
 
-            vkCmdEndRenderPass(CommandBuffers[i]);
+            vkCmdEndRenderPass(commandBuffers[i]);
 
-            result = vkEndCommandBuffer(CommandBuffers[i]);
-            EvaluteVulkanResult(result);
+            result = vkEndCommandBuffer(commandBuffers[i]);
+            evaluteVulkanResult(result);
         }
 
         VkSemaphoreCreateInfo semaphoreCreateInfo =
@@ -719,17 +727,17 @@ namespace VulkanPrototype
             .flags = 0
         };
 
-        result = vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &SemaphoreImageAvailable);
-        EvaluteVulkanResult(result);
-        result = vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &SemaphoreRenderingDone);
-        EvaluteVulkanResult(result);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreImageAvailable);
+        evaluteVulkanResult(result);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreRenderingDone);
+        evaluteVulkanResult(result);
 
         return 0;
     }
 
     int VulkanPrototype::mainLoop()
     {
-        while (!glfwWindowShouldClose(Window))
+        while (!glfwWindowShouldClose(window))
         {
             //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
@@ -746,13 +754,13 @@ namespace VulkanPrototype
     VkPhysicalDevice VulkanPrototype::pickPhysicalDevice()
     {
         uint32_t amountOfPhysicalDevices = 0;
-        VkResult result = vkEnumeratePhysicalDevices(Instance, &amountOfPhysicalDevices, nullptr);
-        EvaluteVulkanResult(result);
+        VkResult result = vkEnumeratePhysicalDevices(instance, &amountOfPhysicalDevices, nullptr);
+        evaluteVulkanResult(result);
 
         std::vector<VkPhysicalDevice> physicalDevices;
         physicalDevices.resize(amountOfPhysicalDevices);
-        result = vkEnumeratePhysicalDevices(Instance, &amountOfPhysicalDevices, physicalDevices.data());
-        EvaluteVulkanResult(result);
+        result = vkEnumeratePhysicalDevices(instance, &amountOfPhysicalDevices, physicalDevices.data());
+        evaluteVulkanResult(result);
 
         for (uint32_t i = 0; i < amountOfPhysicalDevices; i++)
         {

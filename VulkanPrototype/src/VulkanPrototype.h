@@ -17,42 +17,13 @@ namespace VulkanPrototype
     {
 
     public:
-        /// <summary>
-        /// Konstruktor für die VulkanProtoype Klasse.
-        /// </summary>
         VulkanPrototype();
-
-        /// <summary>
-        /// Evaluiert das Vulkan Result, gibt eine Fehlermeldung aus und Pausiert im Debugger das Program.
-        /// </summary>
-        /// <param name="result">Die VkResult Struktur welche Evaluiert werden soll.</param>
-        void EvaluteVulkanResult(VkResult result);
 
         /// <summary>
         /// Hauptmethode, die zu Beginn des Programms aufgerufen werden muss. Hier werden alle Funktionen für die Initialisierung aufgerufen.
         /// </summary>
         /// <returns>Gibt nach erfolgreichem beenden 0 zurück.</returns>
         int Run();
-
-        /// <summary>
-        /// Die GLFWwindow instanz, welche die größe und die Events des Fensters enthält.
-        /// </summary>
-        GLFWwindow *Window;
-        VkCommandPool CommandPool;
-        VkDevice Device;
-        VkFormat ImageFormat;
-        VkInstance Instance;
-        VkPipeline Pipeline;
-        VkPipelineLayout PipelineLayout;
-        VkQueue Queue;
-        VkRenderPass RenderPass;
-        VkSemaphore SemaphoreImageAvailable, SemaphoreRenderingDone;
-        VkShaderModule ShaderModuleVert, ShaderModuleFrag;
-        VkSurfaceKHR Surface;
-        VkSwapchainKHR Swapchain;
-        std::vector<VkCommandBuffer> CommandBuffers;
-        std::vector<VkFramebuffer> Framebuffers;
-        std::vector<VkImageView> ImageViews;        
 
     private:
 
@@ -88,6 +59,12 @@ namespace VulkanPrototype
         void drawFrame();
 
         /// <summary>
+        /// Evaluiert das Vulkan Result, gibt eine Fehlermeldung aus und Pausiert im Debugger das Program.
+        /// </summary>
+        /// <param name="result">Die VkResult Struktur welche Evaluiert werden soll.</param>
+        void evaluteVulkanResult(VkResult result);
+
+        /// <summary>
         /// Initialisiert die benötigten GLFW Komponenten.
         /// </summary>
         int initializeGlfw();
@@ -96,6 +73,8 @@ namespace VulkanPrototype
         /// Initialisiert die benötigtren Vulkan Komponenten.
         /// </summary>
         int initializeVulkan();
+
+        int createInstance();
 
         /// <summary>
         /// Die Hauptschleife in der die Events und die Spiellogik verarbeitet werden.
@@ -119,6 +98,23 @@ namespace VulkanPrototype
         {
             uint32_t width, height;
         } windowSize;
+
+        GLFWwindow* window;
+        VkCommandPool commandPool;
+        VkDevice device;
+        VkFormat imageFormat;
+        VkInstance instance;
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+        VkQueue queue;
+        VkRenderPass renderPass;
+        VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
+        VkShaderModule shaderModuleVert, shaderModuleFrag;
+        VkSurfaceKHR surface;
+        VkSwapchainKHR swapchain;
+        std::vector<VkCommandBuffer> commandBuffers;
+        std::vector<VkFramebuffer> frameBuffers;
+        std::vector<VkImageView> imageViews;
     };
 }
 
