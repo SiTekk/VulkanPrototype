@@ -33,7 +33,7 @@ namespace VulkanPrototype
 
     private:
 
-        bool checkInstanceExtensions(std::vector<const char*> instanceExtensions);
+        bool checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions);
         bool checkInstanceLayerSupport(std::vector<const char *> instanceLayers);
         void checkSurfaceCapabilities(VkPhysicalDevice physicalDevice);
 

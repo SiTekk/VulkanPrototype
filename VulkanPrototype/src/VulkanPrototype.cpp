@@ -45,7 +45,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    bool VulkanPrototype::checkInstanceExtensions(std::vector<const char*> instanceExtensions)
+    bool VulkanPrototype::checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions)
     {
         uint32_t amountOfExtensions = 0;
         VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &amountOfExtensions, nullptr);
@@ -181,11 +181,11 @@ namespace VulkanPrototype
 
         uint32_t amountOfGlfwExtensions = 0;
         const char** requiredGlfwExtensions = glfwGetRequiredInstanceExtensions(&amountOfGlfwExtensions);
-        std::vector<const char*> instanceExtensions;
-        instanceExtensions.resize(amountOfGlfwExtensions);
-        instanceExtensions.assign(requiredGlfwExtensions, requiredGlfwExtensions + amountOfGlfwExtensions);
+        std::vector<const char*> instanceExtensions(requiredGlfwExtensions, requiredGlfwExtensions + amountOfGlfwExtensions);
 
-        if (!checkInstanceExtensions(instanceExtensions))
+        instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+        if (!checkInstanceExtensionSupport(instanceExtensions))
         {
             std::cout << "Extension not Supported!\n";
             return -1;
@@ -834,5 +834,13 @@ namespace VulkanPrototype
         {
             throw std::runtime_error("Datei \"" + filename + "\" konnte nicht geöffnet werden!");
         }
+    }
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+    {
+
+        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+        return VK_FALSE;
     }
 }
