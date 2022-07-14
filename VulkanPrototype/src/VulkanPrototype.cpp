@@ -1,6 +1,3 @@
-#include <chrono>
-#include <iostream>
-
 #include "VulkanPrototype.h"
 
 namespace VulkanPrototype
@@ -33,7 +30,6 @@ namespace VulkanPrototype
         pipeline = nullptr;
         pipelineLayout = nullptr;
         queue = nullptr;
-        queueFamilyIndex = 0;
         renderPass = nullptr;
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
@@ -269,6 +265,49 @@ namespace VulkanPrototype
         return 0;
     }
 
+    void VulkanPrototype::createLogicalDevice(VkPhysicalDevice physicalDevice)
+    {
+        VkResult result;
+
+        queueFamily = pickQueueFamily(physicalDevice);
+
+        std::vector<float> queuePriorities(queueFamily.queueCount);
+        for (uint32_t i = 0; i < queueFamily.queueCount; i++)
+            queuePriorities[i] = 1.0f;
+
+        VkDeviceQueueCreateInfo deviceQueueCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = queueFamily.index.value(),
+            .queueCount = queueFamily.queueCount,
+            .pQueuePriorities = queuePriorities.data()
+        };
+
+        VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
+
+        //TODO: Device Extensions überprüfen.
+        const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+        VkDeviceCreateInfo deviceCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueCreateInfoCount = 1,
+            .pQueueCreateInfos = &deviceQueueCreateInfo,
+            .enabledLayerCount = 0,
+            .ppEnabledLayerNames = nullptr,
+            .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
+            .ppEnabledExtensionNames = deviceExtensions.data(),
+            .pEnabledFeatures = &physicalDeviceFeatures
+        };
+
+        result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
+        evaluteVulkanResult(result);
+    }
+
     void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule* shaderModule)
     {
         VkShaderModuleCreateInfo shaderModuleCreateInfo =
@@ -346,34 +385,7 @@ namespace VulkanPrototype
 
         VkPhysicalDevice physicalDevice = pickPhysicalDevice();
 
-        VkDeviceQueueCreateInfo deviceQueueCreateInfo = pickQueueFamily(physicalDevice);
-
-        std::vector<float> queuePriorities(deviceQueueCreateInfo.queueCount);
-        for (uint32_t i = 0; i < deviceQueueCreateInfo.queueCount; i++)
-            queuePriorities[i] = 1.0f;
-        deviceQueueCreateInfo.pQueuePriorities = queuePriorities.data();
-
-        VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
-
-        //TODO: Device Extensions überprüfen.
-        const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-        VkDeviceCreateInfo deviceCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .queueCreateInfoCount = 1,
-            .pQueueCreateInfos = &deviceQueueCreateInfo,
-            .enabledLayerCount = 0,
-            .ppEnabledLayerNames = nullptr,
-            .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
-            .ppEnabledExtensionNames = deviceExtensions.data(),
-            .pEnabledFeatures = &physicalDeviceFeatures
-        };
-
-        result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
-        evaluteVulkanResult(result);
+        createLogicalDevice(physicalDevice);
 
         vkGetDeviceQueue(device, 0, 0, &queue);
 
@@ -722,7 +734,7 @@ namespace VulkanPrototype
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .queueFamilyIndex = deviceQueueCreateInfo.queueFamilyIndex
+            .queueFamilyIndex = queueFamily.index.value()
         };
 
         result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
@@ -832,14 +844,9 @@ namespace VulkanPrototype
         return physicalDevices[0];
     }
 
-    VkDeviceQueueCreateInfo VulkanPrototype::pickQueueFamily(VkPhysicalDevice physicalDevice)
+    QueueFamily VulkanPrototype::pickQueueFamily(VkPhysicalDevice physicalDevice)
     {
-        VkDeviceQueueCreateInfo deviceQueueCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-        };
+        QueueFamily queueFamily;
 
         uint32_t amountOfQueueFamilyProperties = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &amountOfQueueFamilyProperties, nullptr);
@@ -851,25 +858,24 @@ namespace VulkanPrototype
         {
             if (queueFamilyProperties[i].queueFlags == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT))
             {
-                deviceQueueCreateInfo.queueFamilyIndex = i;
+                queueFamily.index = i;
 
                 if (queueFamilyProperties[i].queueCount < 4)
                 {
-                    deviceQueueCreateInfo.queueCount = queueFamilyProperties[i].queueCount;
+                    queueFamily.queueCount = queueFamilyProperties[i].queueCount;
                 }
                 else
                 {
-                    deviceQueueCreateInfo.queueCount = 4;
+                    queueFamily.queueCount = 4;
                 }
                 break;
             }
         }
 
-        if (deviceQueueCreateInfo.queueCount == 0)
+        if (!queueFamily.index.has_value())
             throw std::logic_error("No fitting QueueFamily was found."); //TODO: Inconsisten throw
 
-        queueFamilyIndex = deviceQueueCreateInfo.queueFamilyIndex;
-        return deviceQueueCreateInfo;
+        return queueFamily;
     }
 
     std::vector<char> VulkanPrototype::readFile(const std::string& filename)

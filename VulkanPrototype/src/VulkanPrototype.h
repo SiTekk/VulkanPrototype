@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <optional>
 
 #define VULKANPROTOTYPE_VERSION VK_MAKE_VERSION(0, 1, 0)
 
@@ -16,6 +17,12 @@ namespace VulkanPrototype
     struct WindowSpecification
     {
         uint32_t width, height;
+    };
+
+    struct QueueFamily
+    {
+        std::optional<uint32_t> index;
+        uint32_t queueCount;
     };
 
     class VulkanPrototype
@@ -41,6 +48,7 @@ namespace VulkanPrototype
         int cleanupVulkan();
 
         int createInstance();
+        void createLogicalDevice(VkPhysicalDevice physicalDevice);
         void createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule *shaderModule);
 
         void drawFrame();
@@ -51,7 +59,7 @@ namespace VulkanPrototype
         int mainLoop();
 
         VkPhysicalDevice pickPhysicalDevice();
-        VkDeviceQueueCreateInfo pickQueueFamily(VkPhysicalDevice physicalDevice);
+        QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
 
         std::vector<char> readFile(const std::string& filename);
 
@@ -75,7 +83,7 @@ namespace VulkanPrototype
         VkSurfaceKHR surface;
         VkSwapchainKHR swapchain;
 
-        uint32_t queueFamilyIndex;
+        QueueFamily queueFamily;
 
         std::vector<VkCommandBuffer> commandBuffers;
         std::vector<VkFramebuffer> frameBuffers;
