@@ -306,6 +306,8 @@ namespace VulkanPrototype
 
         result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
         evaluteVulkanResult(result);
+
+        vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
     }
 
     void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule* shaderModule)
@@ -386,8 +388,6 @@ namespace VulkanPrototype
         VkPhysicalDevice physicalDevice = pickPhysicalDevice();
 
         createLogicalDevice(physicalDevice);
-
-        vkGetDeviceQueue(device, 0, 0, &queue);
 
         VkBool32 surfaceSupport = false;
         result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0, surface, &surfaceSupport);
