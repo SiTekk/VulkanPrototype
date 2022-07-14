@@ -75,6 +75,8 @@ namespace VulkanPrototype
         VkSurfaceKHR surface;
         VkSwapchainKHR swapchain;
 
+        uint32_t queueFamilyIndex;
+
         std::vector<VkCommandBuffer> commandBuffers;
         std::vector<VkFramebuffer> frameBuffers;
         std::vector<VkImageView> imageViews;

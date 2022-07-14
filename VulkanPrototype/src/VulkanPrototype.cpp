@@ -27,11 +27,13 @@ namespace VulkanPrototype
         window = nullptr;
         commandPool = nullptr;
         device = nullptr;
+        debugMessenger = nullptr;
         imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
         instance = nullptr;
         pipeline = nullptr;
         pipelineLayout = nullptr;
         queue = nullptr;
+        queueFamilyIndex = 0;
         renderPass = nullptr;
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
@@ -343,13 +345,10 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
 
         VkPhysicalDevice physicalDevice = pickPhysicalDevice();
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
         VkDeviceQueueCreateInfo deviceQueueCreateInfo = pickQueueFamily(physicalDevice);
 
-        std::vector<float> queuePriorities;
-        queuePriorities.resize(deviceQueueCreateInfo.queueCount);
+        std::vector<float> queuePriorities(deviceQueueCreateInfo.queueCount);
         for (uint32_t i = 0; i < deviceQueueCreateInfo.queueCount; i++)
             queuePriorities[i] = 1.0f;
         deviceQueueCreateInfo.pQueuePriorities = queuePriorities.data();
@@ -815,8 +814,7 @@ namespace VulkanPrototype
         VkResult result = vkEnumeratePhysicalDevices(instance, &amountOfPhysicalDevices, nullptr);
         evaluteVulkanResult(result);
 
-        std::vector<VkPhysicalDevice> physicalDevices;
-        physicalDevices.resize(amountOfPhysicalDevices);
+        std::vector<VkPhysicalDevice> physicalDevices(amountOfPhysicalDevices);
         result = vkEnumeratePhysicalDevices(instance, &amountOfPhysicalDevices, physicalDevices.data());
         evaluteVulkanResult(result);
 
@@ -846,8 +844,7 @@ namespace VulkanPrototype
         uint32_t amountOfQueueFamilyProperties = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &amountOfQueueFamilyProperties, nullptr);
 
-        std::vector<VkQueueFamilyProperties> queueFamilyProperties;
-        queueFamilyProperties.resize(amountOfQueueFamilyProperties);
+        std::vector<VkQueueFamilyProperties> queueFamilyProperties(amountOfQueueFamilyProperties);
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &amountOfQueueFamilyProperties, queueFamilyProperties.data());
 
         for (uint32_t i = 0; i < amountOfQueueFamilyProperties; i++)
@@ -869,8 +866,9 @@ namespace VulkanPrototype
         }
 
         if (deviceQueueCreateInfo.queueCount == 0)
-            throw std::logic_error("No fitting QueueFamily was found.");
+            throw std::logic_error("No fitting QueueFamily was found."); //TODO: Inconsisten throw
 
+        queueFamilyIndex = deviceQueueCreateInfo.queueFamilyIndex;
         return deviceQueueCreateInfo;
     }
 
