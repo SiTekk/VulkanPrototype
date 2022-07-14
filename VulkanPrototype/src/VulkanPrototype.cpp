@@ -859,15 +859,8 @@ namespace VulkanPrototype
             if (queueFamilyProperties[i].queueFlags == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT))
             {
                 queueFamily.index = i;
+                queueFamily.queueCount = 1;
 
-                if (queueFamilyProperties[i].queueCount < 4)
-                {
-                    queueFamily.queueCount = queueFamilyProperties[i].queueCount;
-                }
-                else
-                {
-                    queueFamily.queueCount = 4;
-                }
                 break;
             }
         }
