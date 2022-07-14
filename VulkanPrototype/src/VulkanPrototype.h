@@ -45,8 +45,6 @@ namespace VulkanPrototype
 
         void drawFrame();
 
-        void evaluteVulkanResult(VkResult result);
-
         int initializeGlfw();
         int initializeVulkan();
 
@@ -64,6 +62,7 @@ namespace VulkanPrototype
         WindowSpecification windowSize;
 
         VkCommandPool commandPool;
+        VkDebugUtilsMessengerEXT debugMessenger;
         VkDevice device;
         VkFormat imageFormat;
         VkInstance instance;
