@@ -110,28 +110,41 @@ namespace VulkanPrototype
         return true;
     }
 
-    SurfaceDetails VulkanPrototype::querySurfaceCapabilities(VkPhysicalDevice physicalDevice)
+    VkSurfaceFormatKHR VulkanPrototype::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
     {
-        SurfaceDetails surfaceDetails;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceDetails.capabilities);
+        for (const auto& availableFormat : availableFormats)
+        {
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return availableFormat;
+            }
+        }
 
-        uint32_t amountOfSurfaceFormats = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, nullptr);
-        surfaceDetails.formats.resize(amountOfSurfaceFormats);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, surfaceDetails.formats.data());
+        return availableFormats[0];
+    }
 
-        uint32_t amountOFPresentModes = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, nullptr);
-        surfaceDetails.presentModes.resize(amountOFPresentModes);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, surfaceDetails.presentModes.data());
+    VkPresentModeKHR VulkanPrototype::choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+    {
+        for (const auto& availablePresentMode : availablePresentModes)
+        {
+            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                return availablePresentMode;
+            }
+        }
 
-        return surfaceDetails;
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
 
     int VulkanPrototype::cleanupGlfw()
     {
         glfwDestroyWindow(window);
         return 0;
+    }
+
+    VkExtent2D VulkanPrototype::chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities)
+    {
+        return VkExtent2D();
     }
 
     int VulkanPrototype::cleanupVulkan()
@@ -141,24 +154,30 @@ namespace VulkanPrototype
         vkDestroySemaphore(device, semaphoreRenderingDone, nullptr);
         vkDestroySemaphore(device, semaphoreImageAvailable, nullptr);
         vkDestroyCommandPool(device, commandPool, nullptr);
+
         for (uint32_t i = 0; i < frameBuffers.size(); i++)
             vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+
         vkDestroyPipeline(device, pipeline, nullptr);
         vkDestroyRenderPass(device, renderPass, nullptr);
+
         for (uint32_t i = 0; i < imageViews.size(); i++)
             vkDestroyImageView(device, imageViews[i], nullptr);
+
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
         vkDestroyShaderModule(device, shaderModuleVert, nullptr);
         vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
         vkDestroySwapchainKHR(device, swapchain, nullptr);
         vkDestroyDevice(device, nullptr);
         vkDestroySurfaceKHR(instance, surface, nullptr);
+
 #ifdef DEBUG
         auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (vkDestroyDebugUtilsMessengerEXT != nullptr) {
             vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
 #endif
+
         vkDestroyInstance(instance, nullptr);
 
         return 0;
@@ -398,7 +417,10 @@ namespace VulkanPrototype
             return -1;
         }
 
-        querySurfaceCapabilities(physicalDevice);
+        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice);
+
+        VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
+        VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
 
         //TODO: Parameter Überprüfen
         VkSwapchainCreateInfoKHR swapchainCreateInfo =
@@ -867,6 +889,24 @@ namespace VulkanPrototype
             throw std::logic_error("No fitting QueueFamily was found."); //TODO: Inconsisten throw
 
         return queueFamily;
+    }
+
+    SurfaceDetails VulkanPrototype::querySurfaceCapabilities(VkPhysicalDevice physicalDevice)
+    {
+        SurfaceDetails surfaceDetails;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceDetails.capabilities);
+
+        uint32_t amountOfSurfaceFormats = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, nullptr);
+        surfaceDetails.formats.resize(amountOfSurfaceFormats);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, surfaceDetails.formats.data());
+
+        uint32_t amountOFPresentModes = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, nullptr);
+        surfaceDetails.presentModes.resize(amountOFPresentModes);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, surfaceDetails.presentModes.data());
+
+        return surfaceDetails;
     }
 
     std::vector<char> VulkanPrototype::readFile(const std::string& filename)

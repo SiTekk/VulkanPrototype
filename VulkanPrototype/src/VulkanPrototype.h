@@ -50,6 +50,10 @@ namespace VulkanPrototype
         bool checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions);
         bool checkInstanceLayerSupport(std::vector<const char *> instanceLayers);
 
+        VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        VkExtent2D chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities);
+
         int cleanupGlfw();
         int cleanupVulkan();
 
