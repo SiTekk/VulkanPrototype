@@ -14,15 +14,22 @@
 
 namespace VulkanPrototype
 {
-    struct WindowSpecification
-    {
-        uint32_t width, height;
-    };
-
     struct QueueFamily
     {
         std::optional<uint32_t> index;
         uint32_t queueCount;
+    };
+
+    struct SurfaceDetails
+    {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
+    struct WindowSpecification
+    {
+        uint32_t width, height;
     };
 
     class VulkanPrototype
@@ -42,7 +49,6 @@ namespace VulkanPrototype
 
         bool checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions);
         bool checkInstanceLayerSupport(std::vector<const char *> instanceLayers);
-        void checkSurfaceCapabilities(VkPhysicalDevice physicalDevice);
 
         int cleanupGlfw();
         int cleanupVulkan();
@@ -60,6 +66,8 @@ namespace VulkanPrototype
 
         VkPhysicalDevice pickPhysicalDevice();
         QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
+
+        SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice);
 
         std::vector<char> readFile(const std::string& filename);
 

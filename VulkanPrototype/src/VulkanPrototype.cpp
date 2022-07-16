@@ -110,24 +110,22 @@ namespace VulkanPrototype
         return true;
     }
 
-    void VulkanPrototype::checkSurfaceCapabilities(VkPhysicalDevice physicalDevice)
+    SurfaceDetails VulkanPrototype::querySurfaceCapabilities(VkPhysicalDevice physicalDevice)
     {
-        VkSurfaceCapabilitiesKHR surfaceCapabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+        SurfaceDetails surfaceDetails;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceDetails.capabilities);
 
         uint32_t amountOfSurfaceFormats = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, nullptr);
-        std::vector<VkSurfaceFormatKHR> surfaceFormats;
-        surfaceFormats.resize(amountOfSurfaceFormats);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, surfaceFormats.data());
+        surfaceDetails.formats.resize(amountOfSurfaceFormats);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, surfaceDetails.formats.data());
 
         uint32_t amountOFPresentModes = 0;
         vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, nullptr);
-        std::vector<VkPresentModeKHR> presentModes;
-        presentModes.resize(amountOFPresentModes);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, presentModes.data());
+        surfaceDetails.presentModes.resize(amountOFPresentModes);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, surfaceDetails.presentModes.data());
 
-        return;
+        return surfaceDetails;
     }
 
     int VulkanPrototype::cleanupGlfw()
@@ -390,7 +388,7 @@ namespace VulkanPrototype
         createLogicalDevice(physicalDevice);
 
         VkBool32 surfaceSupport = false;
-        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0, surface, &surfaceSupport);
+        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), surface, &surfaceSupport);
         evaluteVulkanResult(result);
 
         if (!surfaceSupport)
@@ -400,7 +398,7 @@ namespace VulkanPrototype
             return -1;
         }
 
-        checkSurfaceCapabilities(physicalDevice);
+        querySurfaceCapabilities(physicalDevice);
 
         //TODO: Parameter Überprüfen
         VkSwapchainCreateInfoKHR swapchainCreateInfo =
