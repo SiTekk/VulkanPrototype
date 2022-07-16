@@ -23,9 +23,9 @@ namespace VulkanPrototype
 
         window = nullptr;
         commandPool = nullptr;
-        device = nullptr;
         debugMessenger = nullptr;
-        imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        device = nullptr;
+        swapchainExtent = {};
         instance = nullptr;
         pipeline = nullptr;
         pipelineLayout = nullptr;
@@ -34,6 +34,7 @@ namespace VulkanPrototype
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
         surface = nullptr;
+        surfaceFormat = {};
         swapchain = nullptr;
         shaderModuleFrag = nullptr;
         shaderModuleVert = nullptr;
@@ -110,17 +111,28 @@ namespace VulkanPrototype
         return true;
     }
 
-    VkSurfaceFormatKHR VulkanPrototype::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    VkExtent2D VulkanPrototype::chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities)
     {
-        for (const auto& availableFormat : availableFormats)
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
         {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            {
-                return availableFormat;
-            }
+            return capabilities.currentExtent;
         }
+        else
+        {
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height);
 
-        return availableFormats[0];
+            VkExtent2D actualExtent =
+            {
+                .width = static_cast<uint32_t>(width),
+                .height = static_cast<uint32_t>(height)
+            };
+
+            actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+            actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+            return actualExtent;
+        }
     }
 
     VkPresentModeKHR VulkanPrototype::choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
@@ -136,15 +148,23 @@ namespace VulkanPrototype
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
+    VkSurfaceFormatKHR VulkanPrototype::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    {
+        for (const auto& availableFormat : availableFormats)
+        {
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            {
+                return availableFormat;
+            }
+        }
+
+        return availableFormats[0];
+    }
+
     int VulkanPrototype::cleanupGlfw()
     {
         glfwDestroyWindow(window);
         return 0;
-    }
-
-    VkExtent2D VulkanPrototype::chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities)
-    {
-        return VkExtent2D();
     }
 
     int VulkanPrototype::cleanupVulkan()
@@ -247,7 +267,7 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .flags = 0,
             .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-            .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+            .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
             .pfnUserCallback = debugCallback,
             .pUserData = nullptr
         };
@@ -342,6 +362,49 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
+    void VulkanPrototype::createSwapchain(VkPhysicalDevice physicalDevice)
+    {
+        VkResult result;
+        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice);
+
+        surfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
+        VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
+        swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
+
+        uint32_t imageCount = surfaceDetails.capabilities.minImageCount + 1;
+
+        if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
+        {
+            imageCount = surfaceDetails.capabilities.maxImageCount;
+        }
+
+        //TODO: Parameter Überprüfen
+        VkSwapchainCreateInfoKHR swapchainCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext = nullptr,
+            .flags = 0,
+            .surface = surface,
+            .minImageCount = imageCount,
+            .imageFormat = surfaceFormat.format,
+            .imageColorSpace = surfaceFormat.colorSpace,
+            .imageExtent = swapchainExtent,
+            .imageArrayLayers = 1,
+            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr,
+            .preTransform = surfaceDetails.capabilities.currentTransform,//VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode = presentMode,
+            .clipped = VK_TRUE,
+            .oldSwapchain = VK_NULL_HANDLE
+        };
+
+        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
+        evaluteVulkanResult(result);
+    }
+
     void VulkanPrototype::drawFrame()
     {
         uint32_t imageIndex;
@@ -417,36 +480,7 @@ namespace VulkanPrototype
             return -1;
         }
 
-        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice);
-
-        VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
-        VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
-
-        //TODO: Parameter Überprüfen
-        VkSwapchainCreateInfoKHR swapchainCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .flags = 0,
-            .surface = surface,
-            .minImageCount = 3,
-            .imageFormat = imageFormat,
-            .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-            .imageExtent = VkExtent2D {windowSize.width, windowSize.height },
-            .imageArrayLayers = 1,
-            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = nullptr,
-            .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode = VK_PRESENT_MODE_MAILBOX_KHR,
-            .clipped = VK_TRUE,
-            .oldSwapchain = VK_NULL_HANDLE
-        };
-
-        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
-        evaluteVulkanResult(result);
+        createSwapchain(physicalDevice);
 
         uint32_t amountOfImagesInSwapchain = 0;
         result = vkGetSwapchainImagesKHR(device, swapchain, &amountOfImagesInSwapchain, nullptr);
@@ -468,7 +502,7 @@ namespace VulkanPrototype
                 .flags = 0,
                 .image = swapchainImages[i],
                 .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                .format = swapchainCreateInfo.imageFormat,
+                .format = surfaceFormat.format,
                 .components =
                 {
                     .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -647,7 +681,7 @@ namespace VulkanPrototype
         VkAttachmentDescription attachmentDescription =
         {
             .flags = 0,
-            .format = imageFormat,
+            .format = surfaceFormat.format,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
