@@ -613,7 +613,7 @@ namespace VulkanPrototype
         VkRect2D scissor =
         {
             .offset = { 0, 0 },
-            .extent = { windowData.Width, windowData.Height }
+            .extent = { static_cast<uint32_t>(windowData.Width), static_cast<uint32_t>(windowData.Height) }
         };
 
         VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
@@ -793,8 +793,8 @@ namespace VulkanPrototype
                 .renderPass = renderPass,
                 .attachmentCount = 1,
                 .pAttachments = &(imageViews[i]),
-                .width = windowData.Width,
-                .height = windowData.Height,
+                .width = static_cast<uint32_t>(windowData.Width),
+                .height = static_cast<uint32_t>(windowData.Height),
                 .layers = 1
             };
 
@@ -845,7 +845,7 @@ namespace VulkanPrototype
                 .pNext = nullptr,
                 .renderPass = renderPass,
                 .framebuffer = frameBuffers[i],
-                .renderArea = {{0, 0}, {windowData.Width, windowData.Height}},
+                .renderArea = {{0, 0}, {static_cast<uint32_t>(windowData.Width), static_cast<uint32_t>(windowData.Height)}},
                 .clearValueCount = 1,
                 .pClearValues = &clearValue
             };
