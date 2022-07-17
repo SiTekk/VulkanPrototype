@@ -19,7 +19,9 @@ namespace VulkanPrototype
 
     VulkanPrototype::VulkanPrototype()
     {
-        windowSize = {.width = 1280, .height = 720};
+        windowData = {};
+        windowData.Width = 1280;
+        windowData.Height = 720;
 
         window = nullptr;
         commandPool = nullptr;
@@ -27,15 +29,13 @@ namespace VulkanPrototype
         device = nullptr;
         swapchainExtent = {};
         instance = nullptr;
+        physicalDevice = nullptr;
         pipeline = nullptr;
         pipelineLayout = nullptr;
         queue = nullptr;
         renderPass = nullptr;
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
-        surface = nullptr;
-        surfaceFormat = {};
-        swapchain = nullptr;
         shaderModuleFrag = nullptr;
         shaderModuleVert = nullptr;
     }
@@ -187,9 +187,9 @@ namespace VulkanPrototype
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
         vkDestroyShaderModule(device, shaderModuleVert, nullptr);
         vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
-        vkDestroySwapchainKHR(device, swapchain, nullptr);
+        vkDestroySwapchainKHR(device, windowData.Swapchain, nullptr);
         vkDestroyDevice(device, nullptr);
-        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroySurfaceKHR(instance, windowData.Surface, nullptr);
 
 #ifdef DEBUG
         auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -201,6 +201,51 @@ namespace VulkanPrototype
         vkDestroyInstance(instance, nullptr);
 
         return 0;
+    }
+
+    void VulkanPrototype::createImageViews(ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+
+        result = vkGetSwapchainImagesKHR(device, wd.Swapchain, &wd.ImageCount, nullptr);
+        evaluteVulkanResult(result);
+        std::vector<VkImage> swapchainImages(wd.ImageCount);
+        result = vkGetSwapchainImagesKHR(device, wd.Swapchain, &wd.ImageCount, swapchainImages.data());
+        evaluteVulkanResult(result);
+
+        imageViews.resize(wd.ImageCount);
+
+        for (uint32_t i = 0; i < wd.ImageCount; i++)
+        {
+
+            VkImageViewCreateInfo imageViewCreateInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .image = swapchainImages[i],
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format = wd.SurfaceFormat.format,
+                .components =
+                {
+                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .a = VK_COMPONENT_SWIZZLE_IDENTITY
+                },
+                .subresourceRange =
+                {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+                }
+            };
+
+            result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageViews[i]);
+            evaluteVulkanResult(result);
+        }
     }
 
     int VulkanPrototype::createInstance()
@@ -362,12 +407,12 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createSwapchain(VkPhysicalDevice physicalDevice)
+    void VulkanPrototype::createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
-        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice);
+        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice, windowData);
 
-        surfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
+        wd.SurfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
         VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
         swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
 
@@ -384,10 +429,10 @@ namespace VulkanPrototype
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext = nullptr,
             .flags = 0,
-            .surface = surface,
+            .surface = wd.Surface,
             .minImageCount = imageCount,
-            .imageFormat = surfaceFormat.format,
-            .imageColorSpace = surfaceFormat.colorSpace,
+            .imageFormat = wd.SurfaceFormat.format,
+            .imageColorSpace = wd.SurfaceFormat.colorSpace,
             .imageExtent = swapchainExtent,
             .imageArrayLayers = 1,
             .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -401,14 +446,14 @@ namespace VulkanPrototype
             .oldSwapchain = VK_NULL_HANDLE
         };
 
-        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
+        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &wd.Swapchain);
         evaluteVulkanResult(result);
     }
 
     void VulkanPrototype::drawFrame()
     {
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(), semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(device, windowData.Swapchain, std::numeric_limits<uint64_t>::max(), semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
         evaluteVulkanResult(result);
 
         VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -435,7 +480,7 @@ namespace VulkanPrototype
             .waitSemaphoreCount = 1,
             .pWaitSemaphores = &semaphoreRenderingDone,
             .swapchainCount = 1,
-            .pSwapchains = &swapchain,
+            .pSwapchains = &windowData.Swapchain,
             .pImageIndices = &imageIndex,
             .pResults = nullptr
         };
@@ -446,11 +491,22 @@ namespace VulkanPrototype
 
     int VulkanPrototype::initializeGlfw()
     {
-        glfwInit();
+        if (!glfwInit())
+        {
+            std::cerr << "Could not initalize GLFW!\n";
+            return -1;
+        }
+
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        window = glfwCreateWindow(windowSize.width, windowSize.height, "VulkanPrototype", nullptr, nullptr);
+        if (!glfwVulkanSupported())
+        {
+            std::cerr << "GLFW: Vulkan not supported!\n";
+            return -1;
+        }
+
+        window = glfwCreateWindow(windowData.Width, windowData.Height, "VulkanPrototype", nullptr, nullptr);
 
         return 0;
     }
@@ -462,15 +518,15 @@ namespace VulkanPrototype
         if (createInstance() != 0)
             return -1;
 
-        result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+        result = glfwCreateWindowSurface(instance, window, nullptr, &windowData.Surface);
         evaluteVulkanResult(result);
 
-        VkPhysicalDevice physicalDevice = pickPhysicalDevice();
+        physicalDevice = pickPhysicalDevice();
 
         createLogicalDevice(physicalDevice);
 
         VkBool32 surfaceSupport = false;
-        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), surface, &surfaceSupport);
+        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), windowData.Surface, &surfaceSupport);
         evaluteVulkanResult(result);
 
         if (!surfaceSupport)
@@ -480,49 +536,8 @@ namespace VulkanPrototype
             return -1;
         }
 
-        createSwapchain(physicalDevice);
-
-        uint32_t amountOfImagesInSwapchain = 0;
-        result = vkGetSwapchainImagesKHR(device, swapchain, &amountOfImagesInSwapchain, nullptr);
-        evaluteVulkanResult(result);
-        std::vector<VkImage> swapchainImages;
-        swapchainImages.resize(amountOfImagesInSwapchain);
-        result = vkGetSwapchainImagesKHR(device, swapchain, &amountOfImagesInSwapchain, swapchainImages.data());
-        evaluteVulkanResult(result);
-
-        imageViews.resize(amountOfImagesInSwapchain);
-
-        for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
-        {
-
-            VkImageViewCreateInfo imageViewCreateInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .image = swapchainImages[i],
-                .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                .format = surfaceFormat.format,
-                .components =
-                {
-                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .a = VK_COMPONENT_SWIZZLE_IDENTITY
-                },
-                .subresourceRange =
-                {
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-                }
-            };
-
-            result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageViews[i]);
-            evaluteVulkanResult(result);
-        }
+        createSwapchain(physicalDevice, windowData);
+        createImageViews(windowData);
 
         std::vector<char> shaderCodeVert, shaderCodeFrag;
 
@@ -583,12 +598,13 @@ namespace VulkanPrototype
             .primitiveRestartEnable = VK_FALSE
         };
 
+        //TODO: Eventuell windowData als parameter übergeben (konsistenz)
         VkViewport viewport =
         {
             .x = 0.0f,
             .y = 0.0f,
-            .width = (float)windowSize.width,
-            .height = (float)windowSize.height,
+            .width = (float)windowData.Width,
+            .height = (float)windowData.Height,
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -596,7 +612,7 @@ namespace VulkanPrototype
         VkRect2D scissor =
         {
             .offset = { 0, 0 },
-            .extent = { windowSize.width, windowSize.height }
+            .extent = { windowData.Width, windowData.Height }
         };
 
         VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
@@ -678,10 +694,11 @@ namespace VulkanPrototype
         result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &pipelineLayout);
         evaluteVulkanResult(result);
 
+        //TODO: WindowData as parameter
         VkAttachmentDescription attachmentDescription =
         {
             .flags = 0,
-            .format = surfaceFormat.format,
+            .format = windowData.SurfaceFormat.format,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -764,8 +781,8 @@ namespace VulkanPrototype
         result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
         evaluteVulkanResult(result);
 
-        frameBuffers.resize(amountOfImagesInSwapchain);
-        for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
+        frameBuffers.resize(windowData.ImageCount);
+        for (uint32_t i = 0; i < windowData.ImageCount; i++)
         {
             VkFramebufferCreateInfo framebufferCreateInfo =
             {
@@ -775,8 +792,8 @@ namespace VulkanPrototype
                 .renderPass = renderPass,
                 .attachmentCount = 1,
                 .pAttachments = &(imageViews[i]),
-                .width = windowSize.width,
-                .height = windowSize.height,
+                .width = windowData.Width,
+                .height = windowData.Height,
                 .layers = 1
             };
 
@@ -800,10 +817,10 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .commandPool = commandPool,
             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = amountOfImagesInSwapchain
+            .commandBufferCount = windowData.ImageCount
         };
 
-        commandBuffers.resize(amountOfImagesInSwapchain);
+        commandBuffers.resize(windowData.ImageCount);
         result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
 
         VkCommandBufferBeginInfo commandBufferBeginInfo =
@@ -814,7 +831,7 @@ namespace VulkanPrototype
             .pInheritanceInfo = nullptr
         };
 
-        for (uint32_t i = 0; i < amountOfImagesInSwapchain; i++)
+        for (uint32_t i = 0; i < windowData.ImageCount; i++)
         {
             result = vkBeginCommandBuffer(commandBuffers[i], &commandBufferBeginInfo);
             evaluteVulkanResult(result);
@@ -827,7 +844,7 @@ namespace VulkanPrototype
                 .pNext = nullptr,
                 .renderPass = renderPass,
                 .framebuffer = frameBuffers[i],
-                .renderArea = {{0, 0}, {windowSize.width, windowSize.height}},
+                .renderArea = {{0, 0}, {windowData.Width, windowData.Height}},
                 .clearValueCount = 1,
                 .pClearValues = &clearValue
             };
@@ -925,20 +942,20 @@ namespace VulkanPrototype
         return queueFamily;
     }
 
-    SurfaceDetails VulkanPrototype::querySurfaceCapabilities(VkPhysicalDevice physicalDevice)
+    SurfaceDetails VulkanPrototype::querySurfaceCapabilities(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd)
     {
         SurfaceDetails surfaceDetails;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceDetails.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, wd.Surface, &surfaceDetails.capabilities);
 
         uint32_t amountOfSurfaceFormats = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, wd.Surface, &amountOfSurfaceFormats, nullptr);
         surfaceDetails.formats.resize(amountOfSurfaceFormats);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &amountOfSurfaceFormats, surfaceDetails.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, wd.Surface, &amountOfSurfaceFormats, surfaceDetails.formats.data());
 
         uint32_t amountOFPresentModes = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, wd.Surface, &amountOFPresentModes, nullptr);
         surfaceDetails.presentModes.resize(amountOFPresentModes);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &amountOFPresentModes, surfaceDetails.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, wd.Surface, &amountOFPresentModes, surfaceDetails.presentModes.data());
 
         return surfaceDetails;
     }

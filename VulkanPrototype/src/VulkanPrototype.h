@@ -4,6 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <backends/imgui_impl_vulkan.h>
+
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -26,11 +28,6 @@ namespace VulkanPrototype
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
         std::vector<VkPresentModeKHR> presentModes;
-    };
-
-    struct WindowSpecification
-    {
-        uint32_t width, height;
     };
 
     class VulkanPrototype
@@ -58,10 +55,11 @@ namespace VulkanPrototype
         int cleanupGlfw();
         int cleanupVulkan();
 
+        void createImageViews(ImGui_ImplVulkanH_Window& wd);
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
         void createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule *shaderModule);
-        void createSwapchain(VkPhysicalDevice physicalDevice);
+        void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
         void drawFrame();
 
@@ -75,30 +73,27 @@ namespace VulkanPrototype
 
 
         //TODO: Maybe pass SurfaceDetails as rederence: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& surfaceDetails)
-        SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice);
+        SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
         std::vector<char> readFile(const std::string& filename);
 
     private:
 
         GLFWwindow* window;
-
-        WindowSpecification windowSize;
+        ImGui_ImplVulkanH_Window windowData;
 
         VkCommandPool commandPool;
         VkDebugUtilsMessengerEXT debugMessenger;
         VkDevice device;
         VkExtent2D swapchainExtent;
         VkInstance instance;
+        VkPhysicalDevice physicalDevice;
         VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
         VkQueue queue;
         VkRenderPass renderPass;
         VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
         VkShaderModule shaderModuleVert, shaderModuleFrag;
-        VkSurfaceKHR surface;
-        VkSurfaceFormatKHR surfaceFormat;
-        VkSwapchainKHR swapchain;
 
         QueueFamily queueFamily;
 
