@@ -536,6 +536,7 @@ namespace VulkanPrototype
             return -1;
         }
 
+        //TODO: replace createSwapchain() and createImageViews() with ImGui impl
         createSwapchain(physicalDevice, windowData);
         createImageViews(windowData);
 
