@@ -58,7 +58,8 @@ namespace VulkanPrototype
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
-        void createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule *shaderModule);
+        void createGraphicsPipeline();
+        void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
         void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
         void drawFrame();
@@ -75,7 +76,7 @@ namespace VulkanPrototype
         //TODO: Maybe pass SurfaceDetails as rederence: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& surfaceDetails)
         SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
-        std::vector<char> readFile(const std::string& filename);
+        void readFile(const std::string& filename, std::vector<char>& buffer);
 
     private:
 
@@ -93,7 +94,6 @@ namespace VulkanPrototype
         VkQueue queue;
         VkRenderPass renderPass;
         VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
-        VkShaderModule shaderModuleVert, shaderModuleFrag;
 
         QueueFamily queueFamily;
 

@@ -36,8 +36,6 @@ namespace VulkanPrototype
         renderPass = nullptr;
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
-        shaderModuleFrag = nullptr;
-        shaderModuleVert = nullptr;
     }
 
     int VulkanPrototype::Run()
@@ -185,8 +183,6 @@ namespace VulkanPrototype
             vkDestroyImageView(device, imageViews[i], nullptr);
 
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyShaderModule(device, shaderModuleVert, nullptr);
-        vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
         vkDestroySwapchainKHR(device, windowData.Swapchain, nullptr);
         vkDestroyDevice(device, nullptr);
         vkDestroySurfaceKHR(instance, windowData.Surface, nullptr);
@@ -392,160 +388,16 @@ namespace VulkanPrototype
         vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
     }
 
-    void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCodeVert, VkShaderModule* shaderModule)
-    {
-        VkShaderModuleCreateInfo shaderModuleCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .codeSize = shaderCodeVert.size(),
-            .pCode = (uint32_t*)shaderCodeVert.data()
-        };
-
-        VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, shaderModule);
-        evaluteVulkanResult(result);
-    }
-
-    void VulkanPrototype::createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd)
+    void VulkanPrototype::createGraphicsPipeline()
     {
         VkResult result;
-        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice, windowData);
-
-        wd.SurfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
-        VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
-        swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
-
-        uint32_t imageCount = surfaceDetails.capabilities.minImageCount + 1;
-
-        if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
-        {
-            imageCount = surfaceDetails.capabilities.maxImageCount;
-        }
-
-        //TODO: Parameter Überprüfen
-        VkSwapchainCreateInfoKHR swapchainCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .flags = 0,
-            .surface = wd.Surface,
-            .minImageCount = imageCount,
-            .imageFormat = wd.SurfaceFormat.format,
-            .imageColorSpace = wd.SurfaceFormat.colorSpace,
-            .imageExtent = swapchainExtent,
-            .imageArrayLayers = 1,
-            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = nullptr,
-            .preTransform = surfaceDetails.capabilities.currentTransform,//VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
-            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode = presentMode,
-            .clipped = VK_TRUE,
-            .oldSwapchain = VK_NULL_HANDLE
-        };
-
-        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &wd.Swapchain);
-        evaluteVulkanResult(result);
-    }
-
-    void VulkanPrototype::drawFrame()
-    {
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, windowData.Swapchain, std::numeric_limits<uint64_t>::max(), semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
-        evaluteVulkanResult(result);
-
-        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        VkSubmitInfo submitInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &semaphoreImageAvailable,
-            .pWaitDstStageMask = waitStageMask,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &(commandBuffers[imageIndex]),
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &semaphoreRenderingDone
-        };
-
-        result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-        evaluteVulkanResult(result);
-
-        VkPresentInfoKHR presentInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &semaphoreRenderingDone,
-            .swapchainCount = 1,
-            .pSwapchains = &windowData.Swapchain,
-            .pImageIndices = &imageIndex,
-            .pResults = nullptr
-        };
-
-        result = vkQueuePresentKHR(queue, &presentInfo);
-        evaluteVulkanResult(result);
-    }
-
-    int VulkanPrototype::initializeGlfw()
-    {
-        if (!glfwInit())
-        {
-            std::cerr << "Could not initalize GLFW!\n";
-            return -1;
-        }
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        if (!glfwVulkanSupported())
-        {
-            std::cerr << "GLFW: Vulkan not supported!\n";
-            return -1;
-        }
-
-        window = glfwCreateWindow(windowData.Width, windowData.Height, "VulkanPrototype", nullptr, nullptr);
-
-        return 0;
-    }
-
-    int VulkanPrototype::initializeVulkan()
-    {
-        VkResult result;
-
-        if (createInstance() != 0)
-            return -1;
-
-        result = glfwCreateWindowSurface(instance, window, nullptr, &windowData.Surface);
-        evaluteVulkanResult(result);
-
-        physicalDevice = pickPhysicalDevice();
-
-        createLogicalDevice(physicalDevice);
-
-        VkBool32 surfaceSupport = false;
-        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), windowData.Surface, &surfaceSupport);
-        evaluteVulkanResult(result);
-
-        if (!surfaceSupport)
-        {
-            std::cout << "Surface not Supported";
-            evaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
-            return -1;
-        }
-
-        //TODO: replace createSwapchain() and createImageViews() with ImGui impl
-        createSwapchain(physicalDevice, windowData);
-        createImageViews(windowData);
 
         std::vector<char> shaderCodeVert, shaderCodeFrag;
 
         try
         {
-            shaderCodeVert = readFile("shader/vert.spv");
-            shaderCodeFrag = readFile("shader/frag.spv");
+            readFile("shader/vert.spv", shaderCodeVert);
+            readFile("shader/frag.spv", shaderCodeFrag);
         }
         catch (std::exception& ex)
         {
@@ -553,6 +405,7 @@ namespace VulkanPrototype
             evaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
         }
 
+        VkShaderModule shaderModuleVert, shaderModuleFrag;
         createShaderModule(shaderCodeVert, &shaderModuleVert);
         createShaderModule(shaderCodeFrag, &shaderModuleFrag);
 
@@ -566,7 +419,7 @@ namespace VulkanPrototype
             .pName = "main",
             .pSpecializationInfo = nullptr
         },
-        shaderStageCreateInfoFrag = 
+            shaderStageCreateInfoFrag =
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             .pNext = nullptr,
@@ -782,6 +635,160 @@ namespace VulkanPrototype
         result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
         evaluteVulkanResult(result);
 
+        vkDestroyShaderModule(device, shaderModuleVert, nullptr);
+        vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
+    }
+
+    void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule)
+    {
+        VkShaderModuleCreateInfo shaderModuleCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .codeSize = shaderCode.size(),
+            .pCode = reinterpret_cast<const uint32_t*>(shaderCode.data())
+        };
+
+        VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, shaderModule);
+        evaluteVulkanResult(result);
+    }
+
+    void VulkanPrototype::createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+        SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice, windowData);
+
+        wd.SurfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
+        VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
+        swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
+
+        uint32_t imageCount = surfaceDetails.capabilities.minImageCount + 1;
+
+        if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
+        {
+            imageCount = surfaceDetails.capabilities.maxImageCount;
+        }
+
+        //TODO: Parameter Überprüfen
+        VkSwapchainCreateInfoKHR swapchainCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext = nullptr,
+            .flags = 0,
+            .surface = wd.Surface,
+            .minImageCount = imageCount,
+            .imageFormat = wd.SurfaceFormat.format,
+            .imageColorSpace = wd.SurfaceFormat.colorSpace,
+            .imageExtent = swapchainExtent,
+            .imageArrayLayers = 1,
+            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr,
+            .preTransform = surfaceDetails.capabilities.currentTransform,//VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode = presentMode,
+            .clipped = VK_TRUE,
+            .oldSwapchain = VK_NULL_HANDLE
+        };
+
+        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &wd.Swapchain);
+        evaluteVulkanResult(result);
+    }
+
+    void VulkanPrototype::drawFrame()
+    {
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(device, windowData.Swapchain, std::numeric_limits<uint64_t>::max(), semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        evaluteVulkanResult(result);
+
+        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreImageAvailable,
+            .pWaitDstStageMask = waitStageMask,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &(commandBuffers[imageIndex]),
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &semaphoreRenderingDone
+        };
+
+        result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+        evaluteVulkanResult(result);
+
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreRenderingDone,
+            .swapchainCount = 1,
+            .pSwapchains = &windowData.Swapchain,
+            .pImageIndices = &imageIndex,
+            .pResults = nullptr
+        };
+
+        result = vkQueuePresentKHR(queue, &presentInfo);
+        evaluteVulkanResult(result);
+    }
+
+    int VulkanPrototype::initializeGlfw()
+    {
+        if (!glfwInit())
+        {
+            std::cerr << "Could not initalize GLFW!\n";
+            return -1;
+        }
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+        if (!glfwVulkanSupported())
+        {
+            std::cerr << "GLFW: Vulkan not supported!\n";
+            return -1;
+        }
+
+        window = glfwCreateWindow(windowData.Width, windowData.Height, "VulkanPrototype", nullptr, nullptr);
+
+        return 0;
+    }
+
+    int VulkanPrototype::initializeVulkan()
+    {
+        VkResult result;
+
+        if (createInstance() != 0)
+            return -1;
+
+        result = glfwCreateWindowSurface(instance, window, nullptr, &windowData.Surface);
+        evaluteVulkanResult(result);
+
+        physicalDevice = pickPhysicalDevice();
+
+        createLogicalDevice(physicalDevice);
+
+        VkBool32 surfaceSupport = false;
+        result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), windowData.Surface, &surfaceSupport);
+        evaluteVulkanResult(result);
+
+        if (!surfaceSupport)
+        {
+            std::cout << "Surface not Supported";
+            evaluteVulkanResult(VK_ERROR_INITIALIZATION_FAILED);
+            return -1;
+        }
+
+        //TODO: replace createSwapchain() and createImageViews() with ImGui impl
+        createSwapchain(physicalDevice, windowData);
+        createImageViews(windowData);
+
+        createGraphicsPipeline();
+
         frameBuffers.resize(windowData.ImageCount);
         for (uint32_t i = 0; i < windowData.ImageCount; i++)
         {
@@ -961,19 +968,17 @@ namespace VulkanPrototype
         return surfaceDetails;
     }
 
-    std::vector<char> VulkanPrototype::readFile(const std::string& filename)
+    void VulkanPrototype::readFile(const std::string& filename, std::vector<char>& buffer)
     {
         std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
-        if (file)
+        if (file.is_open())
         {
             size_t fileSize = static_cast<size_t>(file.tellg());
             file.seekg(0);
-            std::vector<char> fileBuffer(fileSize);
-            file.read(fileBuffer.data(), fileSize);
+            buffer.resize(fileSize);
+            file.read(buffer.data(), fileSize);
             file.close();
-
-            return fileBuffer;
         }
         else
         {
