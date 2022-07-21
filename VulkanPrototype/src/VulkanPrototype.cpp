@@ -30,10 +30,8 @@ namespace VulkanPrototype
         swapchainExtent = {};
         instance = nullptr;
         physicalDevice = nullptr;
-        pipeline = nullptr;
         pipelineLayout = nullptr;
         queue = nullptr;
-        renderPass = nullptr;
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
     }
@@ -176,8 +174,8 @@ namespace VulkanPrototype
         for (uint32_t i = 0; i < frameBuffers.size(); i++)
             vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
 
-        vkDestroyPipeline(device, pipeline, nullptr);
-        vkDestroyRenderPass(device, renderPass, nullptr);
+        vkDestroyPipeline(device, windowData.Pipeline, nullptr);
+        vkDestroyRenderPass(device, windowData.RenderPass, nullptr);
 
         for (uint32_t i = 0; i < imageViews.size(); i++)
             vkDestroyImageView(device, imageViews[i], nullptr);
@@ -199,7 +197,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    void VulkanPrototype::createGraphicsPipeline()
+    void VulkanPrototype::createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
 
@@ -268,8 +266,8 @@ namespace VulkanPrototype
         {
             .x = 0.0f,
             .y = 0.0f,
-            .width = (float)windowData.Width,
-            .height = (float)windowData.Height,
+            .width = (float)wd.Width,
+            .height = (float)wd.Height,
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -277,7 +275,7 @@ namespace VulkanPrototype
         VkRect2D scissor =
         {
             .offset = { 0, 0 },
-            .extent = { static_cast<uint32_t>(windowData.Width), static_cast<uint32_t>(windowData.Height) }
+            .extent = { static_cast<uint32_t>(wd.Width), static_cast<uint32_t>(wd.Height) }
         };
 
         VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
@@ -359,8 +357,6 @@ namespace VulkanPrototype
         result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &pipelineLayout);
         evaluteVulkanResult(result);
 
-        createRenderPass();
-
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -378,13 +374,13 @@ namespace VulkanPrototype
             .pColorBlendState = &colorBlendCreateInfo,
             .pDynamicState = nullptr,
             .layout = pipelineLayout,
-            .renderPass = renderPass,
+            .renderPass = wd.RenderPass,
             .subpass = 0,
             .basePipelineHandle = VK_NULL_HANDLE,
             .basePipelineIndex = -1
         };
 
-        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
+        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &wd.Pipeline);
         evaluteVulkanResult(result);
 
         vkDestroyShaderModule(device, shaderModuleVert, nullptr);
@@ -580,14 +576,14 @@ namespace VulkanPrototype
         vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
     }
 
-    void VulkanPrototype::createRenderPass()
+    void VulkanPrototype::createRenderPass(ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
         //TODO: WindowData as parameter
         VkAttachmentDescription attachmentDescription =
         {
             .flags = 0,
-            .format = windowData.SurfaceFormat.format,
+            .format = wd.SurfaceFormat.format,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -641,7 +637,7 @@ namespace VulkanPrototype
             .pDependencies = &subpassDependency
         };
 
-        result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
+        result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &wd.RenderPass);
         evaluteVulkanResult(result);
     }
 
@@ -789,11 +785,12 @@ namespace VulkanPrototype
             return -1;
         }
 
-        //TODO: replace createSwapchain() and createImageViews() with ImGui impl
+        //TODO: replace createSwapchain(), createImageViews(), createRenderPass() and createGraphicsPipeline() with ImGui impl
         createSwapchain(physicalDevice, windowData);
         createImageViews(windowData);
-
-        createGraphicsPipeline();
+        createRenderPass(windowData);
+        
+        createGraphicsPipeline(windowData);
 
         frameBuffers.resize(windowData.ImageCount);
         for (uint32_t i = 0; i < windowData.ImageCount; i++)
@@ -803,7 +800,7 @@ namespace VulkanPrototype
                 .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
-                .renderPass = renderPass,
+                .renderPass = windowData.RenderPass,
                 .attachmentCount = 1,
                 .pAttachments = &(imageViews[i]),
                 .width = static_cast<uint32_t>(windowData.Width),
@@ -856,7 +853,7 @@ namespace VulkanPrototype
             {
                 .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                 .pNext = nullptr,
-                .renderPass = renderPass,
+                .renderPass = windowData.RenderPass,
                 .framebuffer = frameBuffers[i],
                 .renderArea = {{0, 0}, {static_cast<uint32_t>(windowData.Width), static_cast<uint32_t>(windowData.Height)}},
                 .clearValueCount = 1,
@@ -865,7 +862,7 @@ namespace VulkanPrototype
 
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, windowData.Pipeline);
             vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffers[i]);

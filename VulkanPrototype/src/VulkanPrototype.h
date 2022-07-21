@@ -55,11 +55,11 @@ namespace VulkanPrototype
         int cleanupGlfw();
         int cleanupVulkan();
 
-        void createGraphicsPipeline();
+        void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
-        void createRenderPass();
+        void createRenderPass(ImGui_ImplVulkanH_Window& wd);
         void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
         void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
@@ -90,10 +90,8 @@ namespace VulkanPrototype
         VkExtent2D swapchainExtent;
         VkInstance instance;
         VkPhysicalDevice physicalDevice;
-        VkPipeline pipeline;
         VkPipelineLayout pipelineLayout;
         VkQueue queue;
-        VkRenderPass renderPass;
         VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
 
         QueueFamily queueFamily;
