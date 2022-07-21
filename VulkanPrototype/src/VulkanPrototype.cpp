@@ -579,7 +579,7 @@ namespace VulkanPrototype
     void VulkanPrototype::createRenderPass(ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
-        //TODO: WindowData as parameter
+
         VkAttachmentDescription attachmentDescription =
         {
             .flags = 0,
