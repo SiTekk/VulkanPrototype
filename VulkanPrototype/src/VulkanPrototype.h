@@ -55,10 +55,11 @@ namespace VulkanPrototype
         int cleanupGlfw();
         int cleanupVulkan();
 
+        void createGraphicsPipeline();
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
-        void createGraphicsPipeline();
+        void createRenderPass();
         void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
         void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
