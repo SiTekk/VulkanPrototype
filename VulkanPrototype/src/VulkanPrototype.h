@@ -55,6 +55,7 @@ namespace VulkanPrototype
         int cleanupGlfw();
         int cleanupVulkan();
 
+        void createFramebuffers(ImGui_ImplVulkanH_Window& wd);
         void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
         int createInstance();
@@ -97,7 +98,7 @@ namespace VulkanPrototype
         QueueFamily queueFamily;
 
         std::vector<VkCommandBuffer> commandBuffers;
-        std::vector<VkFramebuffer> frameBuffers;
+        std::vector<VkFramebuffer> framebuffers;
         std::vector<VkImageView> imageViews;
     };
 }

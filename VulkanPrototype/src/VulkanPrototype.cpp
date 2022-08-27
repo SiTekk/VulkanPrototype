@@ -11,6 +11,7 @@ namespace VulkanPrototype
 
     static void evaluteVulkanResult(VkResult result)
     {
+        //TODO: Implement correct Program abortion
         if (result != VK_SUCCESS)
         {
             std::cout << result;
@@ -171,8 +172,8 @@ namespace VulkanPrototype
         vkDestroySemaphore(device, semaphoreImageAvailable, nullptr);
         vkDestroyCommandPool(device, commandPool, nullptr);
 
-        for (uint32_t i = 0; i < frameBuffers.size(); i++)
-            vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+        for (uint32_t i = 0; i < framebuffers.size(); i++)
+            vkDestroyFramebuffer(device, framebuffers[i], nullptr);
 
         vkDestroyPipeline(device, windowData.Pipeline, nullptr);
         vkDestroyRenderPass(device, windowData.RenderPass, nullptr);
@@ -195,6 +196,31 @@ namespace VulkanPrototype
         vkDestroyInstance(instance, nullptr);
 
         return 0;
+    }
+
+    void VulkanPrototype::createFramebuffers(ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+
+        framebuffers.resize(wd.ImageCount);
+        for (uint32_t i = 0; i < wd.ImageCount; i++)
+        {
+            VkFramebufferCreateInfo framebufferCreateInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .renderPass = wd.RenderPass,
+                .attachmentCount = 1,
+                .pAttachments = &(imageViews[i]),
+                .width = static_cast<uint32_t>(wd.Width),
+                .height = static_cast<uint32_t>(wd.Height),
+                .layers = 1
+            };
+
+            result = vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &(framebuffers[i]));
+            evaluteVulkanResult(result);
+        }
     }
 
     void VulkanPrototype::createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd)
@@ -613,6 +639,7 @@ namespace VulkanPrototype
             .pPreserveAttachments = nullptr
         };
 
+        //TODO: Check if rendering is not done properly without this struct
         VkSubpassDependency subpassDependency =
         {
             .srcSubpass = VK_SUBPASS_EXTERNAL,
@@ -792,24 +819,7 @@ namespace VulkanPrototype
         
         createGraphicsPipeline(windowData);
 
-        frameBuffers.resize(windowData.ImageCount);
-        for (uint32_t i = 0; i < windowData.ImageCount; i++)
-        {
-            VkFramebufferCreateInfo framebufferCreateInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .renderPass = windowData.RenderPass,
-                .attachmentCount = 1,
-                .pAttachments = &(imageViews[i]),
-                .width = static_cast<uint32_t>(windowData.Width),
-                .height = static_cast<uint32_t>(windowData.Height),
-                .layers = 1
-            };
-
-            vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &(frameBuffers[i]));
-        }
+        createFramebuffers(windowData);
 
         VkCommandPoolCreateInfo commandPoolCreateInfo =
         {
@@ -854,7 +864,7 @@ namespace VulkanPrototype
                 .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                 .pNext = nullptr,
                 .renderPass = windowData.RenderPass,
-                .framebuffer = frameBuffers[i],
+                .framebuffer = framebuffers[i],
                 .renderArea = {{0, 0}, {static_cast<uint32_t>(windowData.Width), static_cast<uint32_t>(windowData.Height)}},
                 .clearValueCount = 1,
                 .pClearValues = &clearValue
