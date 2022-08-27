@@ -198,6 +198,23 @@ namespace VulkanPrototype
         return 0;
     }
 
+    void VulkanPrototype::createCommandPool(ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+
+        //TODO: Check flags according to Vulkan Tutorial
+        VkCommandPoolCreateInfo commandPoolCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = queueFamily.index.value()
+        };
+
+        result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
+        evaluteVulkanResult(result);
+    }
+
     void VulkanPrototype::createFramebuffers(ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
@@ -821,16 +838,7 @@ namespace VulkanPrototype
 
         createFramebuffers(windowData);
 
-        VkCommandPoolCreateInfo commandPoolCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .queueFamilyIndex = queueFamily.index.value()
-        };
-
-        result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
-        evaluteVulkanResult(result);
+        createCommandPool(windowData);
 
         VkCommandBufferAllocateInfo commandBufferAllocateInfo =
         {
