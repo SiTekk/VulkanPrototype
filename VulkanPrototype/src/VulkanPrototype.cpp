@@ -170,6 +170,8 @@ namespace VulkanPrototype
 
         vkDestroySemaphore(device, semaphoreRenderingDone, nullptr);
         vkDestroySemaphore(device, semaphoreImageAvailable, nullptr);
+        vkDestroyFence(device, fenceInFlight, nullptr);
+
         vkDestroyCommandPool(device, commandPool, nullptr);
 
         for (uint32_t i = 0; i < framebuffers.size(); i++)
@@ -702,6 +704,23 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
+    void VulkanPrototype::createSemaphores()
+    {
+        VkResult result;
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreImageAvailable);
+        evaluteVulkanResult(result);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreRenderingDone);
+        evaluteVulkanResult(result);
+    }
+
     void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule)
     {
         VkShaderModuleCreateInfo shaderModuleCreateInfo =
@@ -763,7 +782,7 @@ namespace VulkanPrototype
     void VulkanPrototype::drawFrame()
     {
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, windowData.Swapchain, std::numeric_limits<uint64_t>::max(), semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(device, windowData.Swapchain, UINT64_MAX, semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
         evaluteVulkanResult(result);
 
         VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -780,6 +799,7 @@ namespace VulkanPrototype
             .pSignalSemaphores = &semaphoreRenderingDone
         };
 
+        //TODO: Check if a fence might be neccessary for higher load
         result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
         evaluteVulkanResult(result);
 
@@ -859,17 +879,14 @@ namespace VulkanPrototype
 
         recordCommandBuffers(commandBuffers, framebuffers, windowData);
 
-        VkSemaphoreCreateInfo semaphoreCreateInfo =
+        createSemaphores();
+
+        VkFenceCreateInfo fenceCreateInfo =
         {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0
         };
-
-        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreImageAvailable);
-        evaluteVulkanResult(result);
-        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreRenderingDone);
-        evaluteVulkanResult(result);
 
         return 0;
     }

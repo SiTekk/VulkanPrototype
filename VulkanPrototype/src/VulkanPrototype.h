@@ -63,6 +63,7 @@ namespace VulkanPrototype
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
         void createRenderPass(ImGui_ImplVulkanH_Window& wd);
+        void createSemaphores();
         void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
         void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
@@ -88,10 +89,15 @@ namespace VulkanPrototype
         GLFWwindow* window;
         ImGui_ImplVulkanH_Window windowData;
 
+        //TODO: Check if members should be outsourced to the imgui structs
+        //ImGui_ImplVulkanH_Frame vulkanFrames;
+        //ImGui_ImplVulkanH_FrameSemaphores frameSemaphores;
+
         VkCommandPool commandPool;
         VkDebugUtilsMessengerEXT debugMessenger;
         VkDevice device;
         VkExtent2D swapchainExtent;
+        VkFence fenceInFlight;
         VkInstance instance;
         VkPhysicalDevice physicalDevice;
         VkPipelineLayout pipelineLayout;
