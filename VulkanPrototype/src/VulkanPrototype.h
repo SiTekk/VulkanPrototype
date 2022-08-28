@@ -55,6 +55,7 @@ namespace VulkanPrototype
         int cleanupGlfw();
         int cleanupVulkan();
 
+        void createCommandBuffers(ImGui_ImplVulkanH_Window& wd);
         void createCommandPool(ImGui_ImplVulkanH_Window& wd);
         void createFramebuffers(ImGui_ImplVulkanH_Window& wd);
         void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);

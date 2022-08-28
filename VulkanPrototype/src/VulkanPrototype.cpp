@@ -198,6 +198,23 @@ namespace VulkanPrototype
         return 0;
     }
 
+    void VulkanPrototype::createCommandBuffers(ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .commandPool = commandPool,
+            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = wd.ImageCount
+        };
+
+        commandBuffers.resize(wd.ImageCount);
+        result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
+    }
+
     void VulkanPrototype::createCommandPool(ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
@@ -837,20 +854,8 @@ namespace VulkanPrototype
         createGraphicsPipeline(windowData);
 
         createFramebuffers(windowData);
-
         createCommandPool(windowData);
-
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext = nullptr,
-            .commandPool = commandPool,
-            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = windowData.ImageCount
-        };
-
-        commandBuffers.resize(windowData.ImageCount);
-        result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
+        createCommandBuffers(windowData);
 
         VkCommandBufferBeginInfo commandBufferBeginInfo =
         {
