@@ -76,11 +76,12 @@ namespace VulkanPrototype
         VkPhysicalDevice pickPhysicalDevice();
         QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
 
-
         //TODO: Maybe pass SurfaceDetails as rederence: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& surfaceDetails)
         SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
 
         void readFile(const std::string& filename, std::vector<char>& buffer);
+
+        void recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd);
 
     private:
 

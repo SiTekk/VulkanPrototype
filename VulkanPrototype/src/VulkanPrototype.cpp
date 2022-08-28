@@ -857,42 +857,7 @@ namespace VulkanPrototype
         createCommandPool(windowData);
         createCommandBuffers(windowData);
 
-        VkCommandBufferBeginInfo commandBufferBeginInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .pNext = nullptr,
-            .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-            .pInheritanceInfo = nullptr
-        };
-
-        for (uint32_t i = 0; i < windowData.ImageCount; i++)
-        {
-            result = vkBeginCommandBuffer(commandBuffers[i], &commandBufferBeginInfo);
-            evaluteVulkanResult(result);
-
-            VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-            VkRenderPassBeginInfo renderPassBeginInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                .pNext = nullptr,
-                .renderPass = windowData.RenderPass,
-                .framebuffer = framebuffers[i],
-                .renderArea = {{0, 0}, {static_cast<uint32_t>(windowData.Width), static_cast<uint32_t>(windowData.Height)}},
-                .clearValueCount = 1,
-                .pClearValues = &clearValue
-            };
-
-            vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, windowData.Pipeline);
-            vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
-
-            vkCmdEndRenderPass(commandBuffers[i]);
-
-            result = vkEndCommandBuffer(commandBuffers[i]);
-            evaluteVulkanResult(result);
-        }
+        recordCommandBuffers(commandBuffers, framebuffers, windowData);
 
         VkSemaphoreCreateInfo semaphoreCreateInfo =
         {
@@ -1009,6 +974,48 @@ namespace VulkanPrototype
         else
         {
             throw std::runtime_error("Datei \"" + filename + "\" konnte nicht geöffnet werden!");
+        }
+    }
+
+    void VulkanPrototype::recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = nullptr,
+            .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            .pInheritanceInfo = nullptr
+        };
+
+        for (uint32_t i = 0; i < wd.ImageCount; i++)
+        {
+            result = vkBeginCommandBuffer(commandBuffers[i], &commandBufferBeginInfo);
+            evaluteVulkanResult(result);
+
+            VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+            VkRenderPassBeginInfo renderPassBeginInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .pNext = nullptr,
+                .renderPass = wd.RenderPass,
+                .framebuffer = framebuffers[i],
+                .renderArea = {{0, 0}, {static_cast<uint32_t>(wd.Width), static_cast<uint32_t>(wd.Height)}},
+                .clearValueCount = 1,
+                .pClearValues = &clearValue
+            };
+
+            vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, wd.Pipeline);
+            vkCmdDraw(commandBuffers[i], 6, 1, 0, 0);
+
+            vkCmdEndRenderPass(commandBuffers[i]);
+
+            result = vkEndCommandBuffer(commandBuffers[i]);
+            evaluteVulkanResult(result);
         }
     }
 }
