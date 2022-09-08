@@ -10,5 +10,4 @@ VULKAN_INCLUDE = "%{VULKAN_SDK}/Include"
 VULKAN_LIB = "%{VULKAN_SDK}/Lib/vulkan-1.lib"
 
 include "VulkanPrototype"
-include "vendor/premake5_glfw.lua"
 include "vendor/premake5_imgui.lua"

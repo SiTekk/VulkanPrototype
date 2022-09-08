@@ -110,7 +110,7 @@ namespace VulkanPrototype
 
     VkExtent2D VulkanPrototype::chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities)
     {
-        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+        if (capabilities.currentExtent.width != UINT32_MAX)
         {
             return capabilities.currentExtent;
         }
@@ -323,7 +323,7 @@ namespace VulkanPrototype
             .primitiveRestartEnable = VK_FALSE
         };
 
-        //TODO: Eventuell windowData als parameter übergeben (konsistenz)
+        //TODO: Eventuell windowData als parameter ï¿½bergeben (konsistenz)
         VkViewport viewport =
         {
             .x = 0.0f,
@@ -615,7 +615,7 @@ namespace VulkanPrototype
 
         VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
 
-        //TODO: Device Extensions überprüfen.
+        //TODO: Device Extensions ï¿½berprï¿½fen.
         const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
         VkDeviceCreateInfo deviceCreateInfo =
@@ -752,7 +752,7 @@ namespace VulkanPrototype
             imageCount = surfaceDetails.capabilities.maxImageCount;
         }
 
-        //TODO: Parameter Überprüfen
+        //TODO: Parameter ï¿½berprï¿½fen
         VkSwapchainCreateInfoKHR swapchainCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -990,7 +990,7 @@ namespace VulkanPrototype
         }
         else
         {
-            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht geöffnet werden!");
+            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht geï¿½ffnet werden!");
         }
     }
 

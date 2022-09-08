@@ -10,26 +10,53 @@ project "VulkanPrototype"
         "src/*.cpp"
     }
 
-    includedirs {
-        "../vendor/imgui",
-        "../vendor/imgui/backends",
-        "../vendor/glfw/include",
-        "../vendor/glm",
+    filter "system:windows"
+        includedirs {
+            "../vendor/imgui",
+            "../vendor/imgui/backends",
+            "../vendor/glfw/include",
+            "../vendor/glm",
 
-        "%{VULKAN_INCLUDE}"
-    }
+            "%{VULKAN_INCLUDE}"
+        }
 
-    links {
+        links {
         "ImGui",
         "GLFW",
 
         "%{VULKAN_LIB}"
-    }
+        }
 
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        symbols "On"
+        filter "configurations:Debug"
+            defines { "DEBUG" }
+            symbols "On"
+    
+        filter "configurations:Release"
+            defines { "NDEBUG" }
+            optimize "On"
 
-    filter "configurations:Release"
-        defines { "NDEBUG" }
-        optimize "On"
+
+    filter "system:linux"
+        includedirs {
+            "../vendor/imgui",
+            "../vendor/imgui/backends",
+        }
+
+        links {
+            "glfw",
+            "vulkan",
+            "dl",
+            "pthread",
+            "X11",
+            "Xxf86vm",
+            "Xrandr",
+            "Xi"
+        }
+
+        filter "configurations:Debug"
+            defines { "DEBUG" }
+            symbols "On"
+
+        filter "configurations:Release"
+            defines { "NDEBUG" }
+            optimize "On"

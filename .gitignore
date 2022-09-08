@@ -371,5 +371,11 @@ FodyWeavers.xsd
 *.vcxproj.filters
 *.sln
 
+#Makefiles
+Makefile
+
+#Premake5
+premake5
+
 #Executables
 *.exe
