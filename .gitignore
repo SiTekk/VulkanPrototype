@@ -371,11 +371,14 @@ FodyWeavers.xsd
 *.vcxproj.filters
 *.sln
 
-#Makefiles
+# VS Code
+.vscode/**
+
+# Makefiles
 Makefile
 
-#Premake5
+# Premake5
 premake5
 
-#Executables
+# Executables
 *.exe
