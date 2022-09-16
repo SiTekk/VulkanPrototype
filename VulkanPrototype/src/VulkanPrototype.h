@@ -53,6 +53,7 @@ namespace VulkanPrototype
         VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
         int cleanupGlfw();
+        void cleanupSwapchain();
         int cleanupVulkan();
 
         void createCommandBuffers(ImGui_ImplVulkanH_Window& wd);
@@ -82,6 +83,8 @@ namespace VulkanPrototype
 
         void readFile(const std::string& filename, std::vector<char>& buffer);
 
+        void recreateSwapchain();
+
         void recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd);
 
     private:
@@ -102,6 +105,7 @@ namespace VulkanPrototype
         VkPhysicalDevice physicalDevice;
         VkPipelineLayout pipelineLayout;
         VkQueue queue;
+        //TODO: Check if multiple Semaphores should be used (Same amount as Command / Frame Buffers)
         VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
 
         QueueFamily queueFamily;

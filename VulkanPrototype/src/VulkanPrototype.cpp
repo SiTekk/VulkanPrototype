@@ -14,7 +14,7 @@ namespace VulkanPrototype
         //TODO: Implement correct Program abortion
         if (result != VK_SUCCESS)
         {
-            std::cout << result;
+            std::cout << result << "\n";
         }
     }
 
@@ -35,6 +35,7 @@ namespace VulkanPrototype
         queue = nullptr;
         semaphoreImageAvailable = nullptr;
         semaphoreRenderingDone = nullptr;
+        fenceInFlight = nullptr;
     }
 
     int VulkanPrototype::Run()
@@ -164,6 +165,17 @@ namespace VulkanPrototype
         return 0;
     }
 
+    void VulkanPrototype::cleanupSwapchain()
+    {
+        for (uint32_t i = 0; i < framebuffers.size(); i++)
+            vkDestroyFramebuffer(device, framebuffers[i], nullptr);
+
+        for (uint32_t i = 0; i < imageViews.size(); i++)
+            vkDestroyImageView(device, imageViews[i], nullptr);
+
+        vkDestroySwapchainKHR(device, windowData.Swapchain, nullptr);
+    }
+
     int VulkanPrototype::cleanupVulkan()
     {
         vkDeviceWaitIdle(device);
@@ -173,18 +185,12 @@ namespace VulkanPrototype
         vkDestroyFence(device, fenceInFlight, nullptr);
 
         vkDestroyCommandPool(device, commandPool, nullptr);
-
-        for (uint32_t i = 0; i < framebuffers.size(); i++)
-            vkDestroyFramebuffer(device, framebuffers[i], nullptr);
-
         vkDestroyPipeline(device, windowData.Pipeline, nullptr);
         vkDestroyRenderPass(device, windowData.RenderPass, nullptr);
-
-        for (uint32_t i = 0; i < imageViews.size(); i++)
-            vkDestroyImageView(device, imageViews[i], nullptr);
-
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroySwapchainKHR(device, windowData.Swapchain, nullptr);
+
+        cleanupSwapchain();
+
         vkDestroyDevice(device, nullptr);
         vkDestroySurfaceKHR(instance, windowData.Surface, nullptr);
 
@@ -226,7 +232,7 @@ namespace VulkanPrototype
         {
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext = nullptr,
-            .flags = 0,
+            .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
             .queueFamilyIndex = queueFamily.index.value()
         };
 
@@ -745,6 +751,9 @@ namespace VulkanPrototype
         VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
         swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
 
+        wd.Width = swapchainExtent.width;
+        wd.Height = swapchainExtent.height;
+
         uint32_t imageCount = surfaceDetails.capabilities.minImageCount + 1;
 
         if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
@@ -785,6 +794,11 @@ namespace VulkanPrototype
         VkResult result = vkAcquireNextImageKHR(device, windowData.Swapchain, UINT64_MAX, semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
         evaluteVulkanResult(result);
 
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapchain();
+            return;
+        }
+
         VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo =
         {
@@ -817,6 +831,10 @@ namespace VulkanPrototype
 
         result = vkQueuePresentKHR(queue, &presentInfo);
         evaluteVulkanResult(result);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            recreateSwapchain();
+        }
     }
 
     int VulkanPrototype::initializeGlfw()
@@ -828,7 +846,7 @@ namespace VulkanPrototype
         }
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         if (!glfwVulkanSupported())
         {
@@ -992,6 +1010,26 @@ namespace VulkanPrototype
         {
             throw std::runtime_error("Datei \"" + filename + "\" konnte nicht ge�ffnet werden!");
         }
+    }
+
+    void VulkanPrototype::recreateSwapchain()
+    {
+        vkDeviceWaitIdle(device);
+
+        cleanupSwapchain();
+
+        int width = 0, height = 0;
+        glfwGetFramebufferSize(window, &width, &height);
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(window, &width, &height);
+            glfwWaitEvents();
+        }
+
+        createSwapchain(physicalDevice, windowData);
+        createImageViews(windowData);
+        createFramebuffers(windowData);
+
+        recordCommandBuffers(commandBuffers, framebuffers, windowData);
     }
 
     void VulkanPrototype::recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd)
