@@ -11,3 +11,11 @@ VULKAN_LIB = "%{VULKAN_SDK}/Lib/vulkan-1.lib"
 
 include "VulkanPrototype"
 include "vendor/premake5_imgui.lua"
+
+if os.host() == "windows" then
+    include "vendor/premake5_glfw.lua"
+end
+
+if os.host() == "linux" then
+    os.execute("cd VulkanPrototype/shader/ && bash runShaderCompiler.sh")
+end
