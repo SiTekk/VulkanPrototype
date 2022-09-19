@@ -6,8 +6,11 @@
 
 #include <backends/imgui_impl_vulkan.h>
 
+#include <glm/glm.hpp>
+
+#include <array>
 #include <algorithm>
-#include <cstring>
+//#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -28,6 +31,14 @@ namespace VulkanPrototype
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
         std::vector<VkPresentModeKHR> presentModes;
+    };
+
+    struct Vertex {
+        glm::vec2 pos;
+        glm::vec3 color;
+
+        static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions();
+        static VkVertexInputBindingDescription getBindingDescription();
     };
 
     class VulkanPrototype

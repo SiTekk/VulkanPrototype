@@ -18,6 +18,44 @@ namespace VulkanPrototype
         }
     }
 
+    static const std::vector<Vertex> vertices = {
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-1.0f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{0.0f, -0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{1.0f, -0.5f}, {1.0f, 0.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}
+    };
+
+    std::array<VkVertexInputAttributeDescription, 2> Vertex::getAttributeDescriptions()
+    {
+        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions {};
+
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        return attributeDescriptions;
+    }
+
+    VkVertexInputBindingDescription Vertex::getBindingDescription()
+    {
+        VkVertexInputBindingDescription bindingDescription = 
+        {
+            .binding = 0,
+            .stride = sizeof(Vertex),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        };
+
+        return bindingDescription;
+    }
+
     VulkanPrototype::VulkanPrototype()
     {
         windowData = {};
@@ -309,15 +347,18 @@ namespace VulkanPrototype
 
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { shaderStageCreateInfoVert, shaderStageCreateInfoFrag };
 
+        auto bindingDescription = Vertex::getBindingDescription();
+        auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
         VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .vertexBindingDescriptionCount = 0,
-            .pVertexBindingDescriptions = nullptr,
-            .vertexAttributeDescriptionCount = 0,
-            .pVertexAttributeDescriptions = nullptr
+            .vertexBindingDescriptionCount = 1,
+            .pVertexBindingDescriptions = &bindingDescription,
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+            .pVertexAttributeDescriptions = attributeDescriptions.data()
         };
 
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo =
