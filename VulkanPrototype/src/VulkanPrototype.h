@@ -78,6 +78,7 @@ namespace VulkanPrototype
         void createSemaphores();
         void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
         void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
+        void createVertexBuffer();
 
         void drawFrame();
 
@@ -86,6 +87,7 @@ namespace VulkanPrototype
 
         int mainLoop();
 
+        uint32_t pickMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
         VkPhysicalDevice pickPhysicalDevice();
         QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
 
@@ -107,9 +109,11 @@ namespace VulkanPrototype
         //ImGui_ImplVulkanH_Frame vulkanFrames;
         //ImGui_ImplVulkanH_FrameSemaphores frameSemaphores;
 
+        VkBuffer vertexBuffer;
         VkCommandPool commandPool;
         VkDebugUtilsMessengerEXT debugMessenger;
         VkDevice device;
+        VkDeviceMemory vertexBufferMemory;
         VkExtent2D swapchainExtent;
         VkFence fenceInFlight;
         VkInstance instance;
