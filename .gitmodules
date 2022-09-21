@@ -1,9 +1,12 @@
 [submodule "glfw"]
 	path = vendor/glfw
 	url = https://github.com/glfw/glfw.git
+	branch = master
 [submodule "imgui"]
 	path = vendor/imgui
 	url = https://github.com/ocornut/imgui.git
+	branch = master
 [submodule "glm"]
 	path = vendor/glm
 	url = https://github.com/g-truc/glm.git
+	branch = master

@@ -40,6 +40,7 @@ project "VulkanPrototype"
         includedirs {
             "../vendor/imgui",
             "../vendor/imgui/backends",
+            "../vendor/glm"
         }
 
         links {
