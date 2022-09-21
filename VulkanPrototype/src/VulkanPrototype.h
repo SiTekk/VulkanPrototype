@@ -75,6 +75,7 @@ namespace VulkanPrototype
         void createFramebuffers(ImGui_ImplVulkanH_Window& wd);
         void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
+        void createIndexBuffer();
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
         void createRenderPass(ImGui_ImplVulkanH_Window& wd);
@@ -112,11 +113,15 @@ namespace VulkanPrototype
         //ImGui_ImplVulkanH_Frame vulkanFrames;
         //ImGui_ImplVulkanH_FrameSemaphores frameSemaphores;
 
+        //Buffer
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferMemory;
         VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
+
         VkCommandPool commandPool;
         VkDebugUtilsMessengerEXT debugMessenger;
         VkDevice device;
-        VkDeviceMemory vertexBufferMemory;
         VkExtent2D swapchainExtent;
         VkFence fenceInFlight;
         VkInstance instance;
