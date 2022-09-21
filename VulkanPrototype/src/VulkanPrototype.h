@@ -67,6 +67,9 @@ namespace VulkanPrototype
         void cleanupSwapchain();
         int cleanupVulkan();
 
+        void copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer);
+
+        void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void createCommandBuffers(ImGui_ImplVulkanH_Window& wd);
         void createCommandPool(ImGui_ImplVulkanH_Window& wd);
         void createFramebuffers(ImGui_ImplVulkanH_Window& wd);

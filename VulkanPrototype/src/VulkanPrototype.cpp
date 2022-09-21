@@ -249,6 +249,96 @@ namespace VulkanPrototype
         return 0;
     }
 
+    void VulkanPrototype::copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer)
+    {
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .commandPool = commandPool,
+            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = 1
+        };
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &commandBuffer);
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = nullptr,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = nullptr
+        };
+
+        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+        VkBufferCopy copyRegion =
+        {
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size = size
+        };
+
+        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+        vkEndCommandBuffer(commandBuffer);
+
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = nullptr,
+            .pWaitDstStageMask = nullptr,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer,
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = nullptr
+        };
+
+        vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(queue);
+
+        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    }
+
+    void VulkanPrototype::createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+    {
+        VkResult result;
+
+        VkBufferCreateInfo bufferCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .size = size,
+            .usage = usage,
+            .sharingMode = sharingMode,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr,
+        };
+
+        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer);
+        evaluteVulkanResult(result);
+
+        VkMemoryRequirements memoryRequirements;
+        vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
+
+        VkMemoryAllocateInfo memoryAllocateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .allocationSize = memoryRequirements.size,
+            .memoryTypeIndex = pickMemoryType(memoryRequirements.memoryTypeBits, properties)
+        };
+
+        result = vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &bufferMemory);
+        evaluteVulkanResult(result);
+
+        result = vkBindBufferMemory(device, buffer, bufferMemory, 0);
+        evaluteVulkanResult(result);
+    }
+
     void VulkanPrototype::createCommandBuffers(ImGui_ImplVulkanH_Window& wd)
     {
         VkResult result;
@@ -376,6 +466,7 @@ namespace VulkanPrototype
         };
 
         //TODO: Eventuell windowData als parameter �bergeben (konsistenz)
+        //TODO: Viewport is never changed on resize, needs to maybe be recreated.
         VkViewport viewport =
         {
             .x = 0.0f,
@@ -838,42 +929,23 @@ namespace VulkanPrototype
     {
         VkResult result;
 
-        VkBufferCreateInfo bufferCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .size = sizeof(vertices[0]) * vertices.size(),
-            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = nullptr,
-        };
+        uint64_t size = sizeof(vertices[0]) * vertices.size();
 
-        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &vertexBuffer);
-        evaluteVulkanResult(result);
-
-        VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(device, vertexBuffer, &memoryRequirements);
-
-        VkMemoryAllocateInfo memoryAllocateInfo = 
-        {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext = nullptr,
-            .allocationSize = memoryRequirements.size,
-            .memoryTypeIndex = pickMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        };
-
-        result = vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &vertexBufferMemory);
-        evaluteVulkanResult(result);
-
-        result = vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
-        evaluteVulkanResult(result);
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
         void* data;
-        vkMapMemory(device, vertexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
-        memcpy(data, vertices.data(), bufferCreateInfo.size);
-        vkUnmapMemory(device, vertexBufferMemory);
+        vkMapMemory(device, stagingBufferMemory, 0, size, 0, &data);
+        memcpy(data, vertices.data(), size);
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+
+        copyBuffer(size, stagingBuffer, vertexBuffer);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
     void VulkanPrototype::drawFrame()
