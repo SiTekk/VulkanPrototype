@@ -74,7 +74,6 @@ namespace VulkanPrototype
         commandPool = nullptr;
         debugMessenger = nullptr;
         device = nullptr;
-        swapchainExtent = {};
         instance = nullptr;
         physicalDevice = nullptr;
         pipelineLayout = nullptr;
@@ -86,6 +85,7 @@ namespace VulkanPrototype
         indexBufferMemory = nullptr;
         vertexBuffer = nullptr;
         vertexBufferMemory = nullptr;
+        descriptorSetLayout = nullptr;
     }
 
     int VulkanPrototype::Run()
@@ -234,13 +234,19 @@ namespace VulkanPrototype
         vkDestroySemaphore(device, semaphoreImageAvailable, nullptr);
         vkDestroyFence(device, fenceInFlight, nullptr);
 
-        vkDestroyCommandPool(device, commandPool, nullptr);
-        vkDestroyPipeline(device, windowData.Pipeline, nullptr);
-        vkDestroyRenderPass(device, windowData.RenderPass, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-
         cleanupSwapchain();
 
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyRenderPass(device, windowData.RenderPass, nullptr);
+        vkDestroyPipeline(device, windowData.Pipeline, nullptr);
+        vkDestroyCommandPool(device, commandPool, nullptr);
+
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
+        for (uint64_t i = 0; i < uniformBuffers.size(); i++) {
+            vkDestroyBuffer(device, uniformBuffers[i], nullptr);
+            vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+        }
         vkDestroyBuffer(device, indexBuffer, nullptr);
         vkFreeMemory(device, indexBufferMemory, nullptr);
         vkDestroyBuffer(device, vertexBuffer, nullptr);
@@ -382,6 +388,32 @@ namespace VulkanPrototype
         };
 
         result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
+        evaluteVulkanResult(result);
+    }
+
+    void VulkanPrototype::createDescriptorSetLayout()
+    {
+        VkResult result;
+
+        VkDescriptorSetLayoutBinding descriptorSetLayoutBinding =
+        {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = nullptr
+        };
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .bindingCount = 1,
+            .pBindings = &descriptorSetLayoutBinding
+        };
+
+        result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
         evaluteVulkanResult(result);
     }
 
@@ -565,8 +597,8 @@ namespace VulkanPrototype
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .setLayoutCount = 0,
-            .pSetLayouts = nullptr,
+            .setLayoutCount = 1,
+            .pSetLayouts = &descriptorSetLayout,
             .pushConstantRangeCount = 0,
             .pPushConstantRanges = nullptr
         };
@@ -919,7 +951,7 @@ namespace VulkanPrototype
 
         wd.SurfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
         VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
-        swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
+        VkExtent2D swapchainExtent = chooseExtent2D(surfaceDetails.capabilities);
 
         wd.Width = swapchainExtent.width;
         wd.Height = swapchainExtent.height;
@@ -958,6 +990,18 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
+    void VulkanPrototype::createUniformBuffers(ImGui_ImplVulkanH_Window& wd)
+    {
+        uint64_t bufferSize = sizeof(UniformBufferObject);
+
+        uniformBuffers.resize(wd.ImageCount);
+        uniformBuffersMemory.resize(wd.ImageCount);
+
+        for (uint64_t i = 0; i < wd.ImageCount; i++) {
+            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+        }
+    }
+
     void VulkanPrototype::createVertexBuffer()
     {
         VkResult result;
@@ -991,6 +1035,8 @@ namespace VulkanPrototype
             recreateSwapchain();
             return;
         }
+
+        updateUniformBuffer(imageIndex, windowData);
 
         VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo =
@@ -1081,7 +1127,8 @@ namespace VulkanPrototype
         createSwapchain(physicalDevice, windowData);
         createImageViews(windowData);
         createRenderPass(windowData);
-        
+        createDescriptorSetLayout();
+
         createGraphicsPipeline(windowData);
 
         createFramebuffers(windowData);
@@ -1089,6 +1136,7 @@ namespace VulkanPrototype
 
         createVertexBuffer();
         createIndexBuffer();
+        createUniformBuffers(windowData);
 
         createCommandBuffers(windowData);
 
@@ -1291,5 +1339,27 @@ namespace VulkanPrototype
             result = vkEndCommandBuffer(commandBuffers[i]);
             evaluteVulkanResult(result);
         }
+    }
+
+    void VulkanPrototype::updateUniformBuffer(uint32_t imageIndex, ImGui_ImplVulkanH_Window& wd)
+    {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        UniformBufferObject ubo =
+        {
+            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+            .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+            .proj = glm::perspective(glm::radians(90.0f), (float)wd.Width / (float)wd.Height, 0.1f, 10.0f)
+        };
+
+        ubo.proj[1][1] *= -1;
+
+        void* data;
+        vkMapMemory(device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
+        memcpy(data, &ubo, sizeof(ubo));
+        vkUnmapMemory(device, uniformBuffersMemory[imageIndex]);
     }
 }

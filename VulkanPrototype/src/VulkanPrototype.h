@@ -6,10 +6,13 @@
 
 #include <backends/imgui_impl_vulkan.h>
 
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-#include <array>
 #include <algorithm>
+#include <array>
+#include <chrono>
 //#include <cstring>
 #include <fstream>
 #include <iostream>
@@ -33,7 +36,15 @@ namespace VulkanPrototype
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    struct Vertex {
+    struct UniformBufferObject
+    {
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 proj;
+    };
+
+    struct Vertex
+    {
         glm::vec2 pos;
         glm::vec3 color;
 
@@ -72,6 +83,7 @@ namespace VulkanPrototype
         void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void createCommandBuffers(ImGui_ImplVulkanH_Window& wd);
         void createCommandPool(ImGui_ImplVulkanH_Window& wd);
+        void createDescriptorSetLayout();
         void createFramebuffers(ImGui_ImplVulkanH_Window& wd);
         void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
@@ -82,6 +94,7 @@ namespace VulkanPrototype
         void createSemaphores();
         void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
         void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
+        void createUniformBuffers(ImGui_ImplVulkanH_Window& wd);
         void createVertexBuffer();
 
         void drawFrame();
@@ -104,6 +117,8 @@ namespace VulkanPrototype
 
         void recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd);
 
+        void updateUniformBuffer(uint32_t imageIndex, ImGui_ImplVulkanH_Window& wd);
+
     private:
 
         GLFWwindow* window;
@@ -113,16 +128,19 @@ namespace VulkanPrototype
         //ImGui_ImplVulkanH_Frame vulkanFrames;
         //ImGui_ImplVulkanH_FrameSemaphores frameSemaphores;
 
-        //Buffer
+        //Buffers
         VkBuffer indexBuffer;
         VkDeviceMemory indexBufferMemory;
         VkBuffer vertexBuffer;
         VkDeviceMemory vertexBufferMemory;
+        std::vector<VkBuffer> uniformBuffers;
+        std::vector<VkDeviceMemory> uniformBuffersMemory;
 
         VkCommandPool commandPool;
         VkDebugUtilsMessengerEXT debugMessenger;
+        VkDescriptorSetLayout descriptorSetLayout;
         VkDevice device;
-        VkExtent2D swapchainExtent;
+        //VkExtent2D swapchainExtent; //Should be added to window data
         VkFence fenceInFlight;
         VkInstance instance;
         VkPhysicalDevice physicalDevice;
