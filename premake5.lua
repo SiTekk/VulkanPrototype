@@ -14,6 +14,7 @@ include "vendor/premake5_imgui.lua"
 
 if os.host() == "windows" then
     include "vendor/premake5_glfw.lua"
+    os.execute("cd VulkanPrototype/shader/ && runShaderCompiler.bat")
 end
 
 if os.host() == "linux" then
