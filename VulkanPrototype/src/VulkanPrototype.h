@@ -7,13 +7,13 @@
 #include <backends/imgui_impl_vulkan.h>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
 #include <array>
 #include <chrono>
-//#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -38,9 +38,9 @@ namespace VulkanPrototype
 
     struct UniformBufferObject
     {
-        glm::mat4 model;
-        glm::mat4 view;
-        glm::mat4 proj;
+        alignas(16) glm::mat4 model;
+        alignas(16) glm::mat4 view;
+        alignas(16) glm::mat4 proj;
     };
 
     struct Vertex
@@ -83,7 +83,9 @@ namespace VulkanPrototype
         void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
         void createCommandBuffers(ImGui_ImplVulkanH_Window& wd);
         void createCommandPool(ImGui_ImplVulkanH_Window& wd);
+        void createDescriptorPool(ImGui_ImplVulkanH_Window& wd);
         void createDescriptorSetLayout();
+        void createDescriptorSets();
         void createFramebuffers(ImGui_ImplVulkanH_Window& wd);
         void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);
         void createImageViews(ImGui_ImplVulkanH_Window& wd);
@@ -122,6 +124,8 @@ namespace VulkanPrototype
     private:
 
         GLFWwindow* window;
+        
+        //TODO: Replace ImGui_Impl with custom struct and add Extent2d
         ImGui_ImplVulkanH_Window windowData;
 
         //TODO: Check if members should be outsourced to the imgui structs
@@ -136,9 +140,14 @@ namespace VulkanPrototype
         std::vector<VkBuffer> uniformBuffers;
         std::vector<VkDeviceMemory> uniformBuffersMemory;
 
+        //Descriptors
+        VkDescriptorPool descriptorPool;
+        VkDescriptorSetLayout descriptorSetLayout;
+        std::vector<VkDescriptorSet> descriptorSets;
+
+        VkAllocationCallbacks *pAllocator = nullptr;
         VkCommandPool commandPool;
         VkDebugUtilsMessengerEXT debugMessenger;
-        VkDescriptorSetLayout descriptorSetLayout;
         VkDevice device;
         //VkExtent2D swapchainExtent; //Should be added to window data
         VkFence fenceInFlight;

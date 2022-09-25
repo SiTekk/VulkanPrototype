@@ -67,8 +67,8 @@ namespace VulkanPrototype
     VulkanPrototype::VulkanPrototype()
     {
         windowData = {};
-        windowData.Width = 1280;
-        windowData.Height = 720;
+        windowData.Width = 1600;
+        windowData.Height = 900;
 
         window = nullptr;
         commandPool = nullptr;
@@ -86,6 +86,7 @@ namespace VulkanPrototype
         vertexBuffer = nullptr;
         vertexBufferMemory = nullptr;
         descriptorSetLayout = nullptr;
+        descriptorPool = nullptr;
     }
 
     int VulkanPrototype::Run()
@@ -230,39 +231,40 @@ namespace VulkanPrototype
     {
         vkDeviceWaitIdle(device);
 
-        vkDestroySemaphore(device, semaphoreRenderingDone, nullptr);
-        vkDestroySemaphore(device, semaphoreImageAvailable, nullptr);
-        vkDestroyFence(device, fenceInFlight, nullptr);
+        vkDestroySemaphore(device, semaphoreRenderingDone, pAllocator);
+        vkDestroySemaphore(device, semaphoreImageAvailable, pAllocator);
+        vkDestroyFence(device, fenceInFlight, pAllocator);
 
         cleanupSwapchain();
 
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyRenderPass(device, windowData.RenderPass, nullptr);
-        vkDestroyPipeline(device, windowData.Pipeline, nullptr);
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, pAllocator);
+        vkDestroyRenderPass(device, windowData.RenderPass, pAllocator);
+        vkDestroyPipeline(device, windowData.Pipeline, pAllocator);
+        vkDestroyCommandPool(device, commandPool, pAllocator);
 
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 
         for (uint64_t i = 0; i < uniformBuffers.size(); i++) {
-            vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-            vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+            vkDestroyBuffer(device, uniformBuffers[i], pAllocator);
+            vkFreeMemory(device, uniformBuffersMemory[i], pAllocator);
         }
-        vkDestroyBuffer(device, indexBuffer, nullptr);
-        vkFreeMemory(device, indexBufferMemory, nullptr);
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
+        vkDestroyBuffer(device, indexBuffer, pAllocator);
+        vkFreeMemory(device, indexBufferMemory, pAllocator);
+        vkDestroyBuffer(device, vertexBuffer, pAllocator);
+        vkFreeMemory(device, vertexBufferMemory, pAllocator);
 
-        vkDestroyDevice(device, nullptr);
-        vkDestroySurfaceKHR(instance, windowData.Surface, nullptr);
+        vkDestroyDevice(device, pAllocator);
+        vkDestroySurfaceKHR(instance, windowData.Surface, pAllocator);
 
 #ifdef DEBUG
         auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (vkDestroyDebugUtilsMessengerEXT != nullptr) {
-            vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+            vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, pAllocator);
         }
 #endif
 
-        vkDestroyInstance(instance, nullptr);
+        vkDestroyInstance(instance, pAllocator);
 
         return 0;
     }
@@ -391,6 +393,30 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
+    void VulkanPrototype::createDescriptorPool(ImGui_ImplVulkanH_Window& wd)
+    {
+        VkResult result;
+
+        VkDescriptorPoolSize descriptorPoolSize =
+        {
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = wd.ImageCount
+        };
+
+        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .maxSets = wd.ImageCount,
+            .poolSizeCount = 1,
+            .pPoolSizes = &descriptorPoolSize
+        };
+
+        result = vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, pAllocator, &descriptorPool);
+        evaluteVulkanResult(result);
+    }
+
     void VulkanPrototype::createDescriptorSetLayout()
     {
         VkResult result;
@@ -415,6 +441,51 @@ namespace VulkanPrototype
 
         result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
         evaluteVulkanResult(result);
+    }
+
+    void VulkanPrototype::createDescriptorSets()
+    {
+        VkResult result;
+
+        std::vector<VkDescriptorSetLayout> layouts(windowData.ImageCount, descriptorSetLayout);
+        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .descriptorPool = descriptorPool,
+            .descriptorSetCount = windowData.ImageCount,
+            .pSetLayouts = layouts.data()
+        };
+
+        descriptorSets.resize(windowData.ImageCount);
+        result = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, descriptorSets.data());
+        evaluteVulkanResult(result);
+
+        for (uint32_t i = 0; i < windowData.ImageCount; i++)
+        {
+            VkDescriptorBufferInfo bufferInfo =
+            {
+                .buffer = uniformBuffers[i],
+                .offset = 0,
+                .range = sizeof(UniformBufferObject)
+            };
+
+            VkWriteDescriptorSet writeDescriptorSet =
+            {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = nullptr,
+                .dstSet = descriptorSets[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo = nullptr,
+                .pBufferInfo = &bufferInfo,
+                .pTexelBufferView = nullptr
+            };
+
+            vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+        }
     }
 
     void VulkanPrototype::createFramebuffers(ImGui_ImplVulkanH_Window& wd)
@@ -547,7 +618,7 @@ namespace VulkanPrototype
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode = VK_POLYGON_MODE_FILL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .depthBiasEnable = VK_FALSE,
             .depthBiasConstantFactor = 0.0f,
             .depthBiasClamp = 0.0f,
@@ -1138,8 +1209,10 @@ namespace VulkanPrototype
         createIndexBuffer();
         createUniformBuffers(windowData);
 
-        createCommandBuffers(windowData);
+        createDescriptorPool(windowData);
+        createDescriptorSets();
 
+        createCommandBuffers(windowData);
         recordCommandBuffers(commandBuffers, framebuffers, windowData);
 
         createSemaphores();
@@ -1331,6 +1404,7 @@ namespace VulkanPrototype
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
             vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
@@ -1350,9 +1424,9 @@ namespace VulkanPrototype
 
         UniformBufferObject ubo =
         {
-            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .proj = glm::perspective(glm::radians(90.0f), (float)wd.Width / (float)wd.Height, 0.1f, 10.0f)
+            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(60.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+            .view = glm::lookAt(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+            .proj = glm::perspective(glm::radians(60.0f), (float)wd.Width / (float)wd.Height, 0.1f, 10.0f)
         };
 
         ubo.proj[1][1] *= -1;

@@ -1,5 +1,10 @@
 # Vulkan Prototype
-
+## Resources
+- [Vulkan-Tutorial](https://vulkan-tutorial.com/Introduction)  
+- [Uniform Buffers](https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/)  
+- [Modern 3d Graphics](https://paroj.github.io/gltut/)  
+- [Ray Tracing in One Weekend](https://github.com/RayTracing/raytracing.github.io)  
+- [Physically Based Rendering](https://www.pbr-book.org/)  
 ## Setup
 Clone the repostiory with the recursive parameter.
 
