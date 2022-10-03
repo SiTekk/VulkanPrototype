@@ -380,5 +380,8 @@ Makefile
 # Premake5
 premake5
 
+# ImGui
+imgui.ini
+
 # Executables
 *.exe

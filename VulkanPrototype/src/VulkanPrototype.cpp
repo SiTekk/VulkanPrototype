@@ -93,6 +93,7 @@ namespace VulkanPrototype
     {
         initializeGlfw();
         initializeVulkan();
+        initializeImGui();
         mainLoop();
         cleanupVulkan();
         cleanupGlfw();
@@ -414,6 +415,34 @@ namespace VulkanPrototype
         };
 
         result = vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, pAllocator, &descriptorPool);
+        evaluteVulkanResult(result);
+
+        VkDescriptorPoolSize pool_sizes[] =
+        {
+            { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+        };
+
+        VkDescriptorPoolCreateInfo pool_info =
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+            .maxSets = 1000 * IM_ARRAYSIZE(pool_sizes),
+            .poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes),
+            .pPoolSizes = pool_sizes
+        };
+
+        result = vkCreateDescriptorPool(device, &pool_info, pAllocator, &descriptorPoolImGui);
         evaluteVulkanResult(result);
     }
 
@@ -1147,6 +1176,95 @@ namespace VulkanPrototype
         }
     }
 
+    void VulkanPrototype::frameRender(ImGui_ImplVulkanH_Window& wd, ImDrawData* draw_data)
+    {
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(device, wd.Swapchain, UINT64_MAX, semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        evaluteVulkanResult(result);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapchain();
+            return;
+        }
+
+        updateUniformBuffer(imageIndex, wd);
+
+        {
+            result = vkResetCommandPool(device, commandPool, 0);
+            evaluteVulkanResult(result);
+
+            VkCommandBufferBeginInfo info =
+            {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .pNext = nullptr,
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                .pInheritanceInfo = nullptr
+            };
+
+            result = vkBeginCommandBuffer(commandBuffers[imageIndex], &info);
+            evaluteVulkanResult(result);
+        }
+
+        {
+            VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+            VkRenderPassBeginInfo renderPassBeginInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .pNext = nullptr,
+                .renderPass = wd.RenderPass,
+                .framebuffer = framebuffers[imageIndex],
+                .renderArea = {{0, 0}, {static_cast<uint32_t>(wd.Width), static_cast<uint32_t>(wd.Height)}},
+                .clearValueCount = 1,
+                .pClearValues = &clearValue
+            };
+
+            vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        }
+
+        // Record dear imgui primitives into command buffer
+        ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffers[imageIndex]);
+
+        // Submit command buffer
+        vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreImageAvailable,
+            .pWaitDstStageMask = waitStageMask,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &(commandBuffers[imageIndex]),
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &semaphoreRenderingDone
+        };
+
+        vkEndCommandBuffer(commandBuffers[imageIndex]);
+        vkQueueSubmit(queue, 1, &submitInfo, nullptr);
+
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreRenderingDone,
+            .swapchainCount = 1,
+            .pSwapchains = &wd.Swapchain,
+            .pImageIndices = &imageIndex,
+            .pResults = nullptr
+        };
+
+        result = vkQueuePresentKHR(queue, &presentInfo);
+        evaluteVulkanResult(result);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            recreateSwapchain();
+        }
+    }
+
     int VulkanPrototype::initializeGlfw()
     {
         if (!glfwInit())
@@ -1165,6 +1283,68 @@ namespace VulkanPrototype
         }
 
         window = glfwCreateWindow(windowData.Width, windowData.Height, "VulkanPrototype", nullptr, nullptr);
+
+        return 0;
+    }
+
+    int VulkanPrototype::initializeImGui()
+    {
+        VkResult result;
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+
+        ImGui::StyleColorsDark();
+
+        IM_ASSERT(io.BackendPlatformUserData == NULL && "Already initialized a platform backend!");
+
+        ImGui_ImplGlfw_InitForVulkan(window, true);
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance = instance;
+        init_info.PhysicalDevice = physicalDevice;
+        init_info.Device = device;
+        init_info.QueueFamily = queueFamily.index.value();
+        init_info.Queue = queue;
+        init_info.PipelineCache = nullptr;
+        init_info.DescriptorPool = descriptorPoolImGui;
+        init_info.Subpass = 0;
+        init_info.MinImageCount = windowData.ImageCount;
+        init_info.ImageCount = windowData.ImageCount;
+        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.Allocator = pAllocator;
+        init_info.CheckVkResultFn = evaluteVulkanResult;
+        ImGui_ImplVulkan_Init(&init_info, windowData.RenderPass);
+
+        for(int i = 0; i < windowData.ImageCount; i++)
+        {
+            // Use any command queue
+            VkCommandPool command_pool = commandPool;
+            VkCommandBuffer command_buffer = commandBuffers[i];
+
+            result = vkResetCommandPool(device, command_pool, 0);
+            evaluteVulkanResult(result);
+            VkCommandBufferBeginInfo begin_info = {};
+            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            result = vkBeginCommandBuffer(command_buffer, &begin_info);
+            evaluteVulkanResult(result);
+
+            ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+
+            VkSubmitInfo end_info = {};
+            end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            end_info.commandBufferCount = 1;
+            end_info.pCommandBuffers = &command_buffer;
+            result = vkEndCommandBuffer(command_buffer);
+            evaluteVulkanResult(result);
+            result = vkQueueSubmit(queue, 1, &end_info, VK_NULL_HANDLE);
+            evaluteVulkanResult(result);
+
+            result = vkDeviceWaitIdle(device);
+            evaluteVulkanResult(result);
+            ImGui_ImplVulkan_DestroyFontUploadObjects();
+        }
 
         return 0;
     }
@@ -1234,7 +1414,19 @@ namespace VulkanPrototype
             //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
             glfwPollEvents();
-            drawFrame();
+
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::ShowDemoWindow();
+
+            ImGui::Render();
+            ImDrawData* draw_data = ImGui::GetDrawData();
+            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+
+            //drawFrame();
+            frameRender(windowData, draw_data);
 
             //std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             //std::cout << 1000000 / std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count() << "[fps]\n";

@@ -4,6 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
 #define GLM_FORCE_RADIANS
@@ -100,8 +102,10 @@ namespace VulkanPrototype
         void createVertexBuffer();
 
         void drawFrame();
+        void frameRender(ImGui_ImplVulkanH_Window& wd, ImDrawData* draw_data);
 
         int initializeGlfw();
+        int initializeImGui();
         int initializeVulkan();
 
         int mainLoop();
@@ -142,6 +146,7 @@ namespace VulkanPrototype
 
         //Descriptors
         VkDescriptorPool descriptorPool;
+        VkDescriptorPool descriptorPoolImGui;
         VkDescriptorSetLayout descriptorSetLayout;
         std::vector<VkDescriptorSet> descriptorSets;
 
