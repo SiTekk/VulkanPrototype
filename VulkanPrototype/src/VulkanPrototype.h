@@ -62,9 +62,9 @@ namespace VulkanPrototype
         VulkanPrototype();
 
         /// <summary>
-        /// Hauptmethode, die zu Beginn des Programms aufgerufen werden muss. Hier werden alle Funktionen für die Initialisierung aufgerufen.
+        /// Hauptmethode, die zu Beginn des Programms aufgerufen werden muss. Hier werden alle Funktionen fï¿½r die Initialisierung aufgerufen.
         /// </summary>
-        /// <returns>Gibt nach erfolgreichem beenden 0 zurück.</returns>
+        /// <returns>Gibt nach erfolgreichem beenden 0 zurï¿½ck.</returns>
         int Run();
 
     private:

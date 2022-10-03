@@ -1179,7 +1179,7 @@ namespace VulkanPrototype
     void VulkanPrototype::frameRender(ImGui_ImplVulkanH_Window& wd, ImDrawData* draw_data)
     {
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, wd.Swapchain, UINT64_MAX, semaphoreImageAvailable, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(device, wd.Swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &imageIndex);
         evaluteVulkanResult(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1188,6 +1188,14 @@ namespace VulkanPrototype
         }
 
         updateUniformBuffer(imageIndex, wd);
+
+        {
+            result = vkWaitForFences(device, 1, &fenceInFlight, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
+            evaluteVulkanResult(result);
+
+            result = vkResetFences(device, 1, &fenceInFlight);
+            evaluteVulkanResult(result);
+        }
 
         {
             result = vkResetCommandPool(device, commandPool, 0);
@@ -1243,7 +1251,7 @@ namespace VulkanPrototype
         };
 
         vkEndCommandBuffer(commandBuffers[imageIndex]);
-        vkQueueSubmit(queue, 1, &submitInfo, nullptr);
+        vkQueueSubmit(queue, 1, &submitInfo, fenceInFlight);
 
         VkPresentInfoKHR presentInfo =
         {
@@ -1401,8 +1409,9 @@ namespace VulkanPrototype
         {
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = nullptr,
-            .flags = 0
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
         };
+        vkCreateFence(device, &fenceCreateInfo, pAllocator, &fenceInFlight);
 
         return 0;
     }

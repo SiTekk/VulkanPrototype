@@ -44,6 +44,7 @@ project "VulkanPrototype"
         }
 
         links {
+            "ImGui",
             "glfw",
             "vulkan",
             "dl",
