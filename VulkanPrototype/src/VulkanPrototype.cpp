@@ -230,12 +230,12 @@ namespace VulkanPrototype
     void VulkanPrototype::cleanupSwapchain()
     {
         for (uint32_t i = 0; i < framebuffers.size(); i++)
-            vkDestroyFramebuffer(device, framebuffers[i], nullptr);
+            vkDestroyFramebuffer(device, framebuffers[i], pAllocator);
 
         for (uint32_t i = 0; i < imageViews.size(); i++)
-            vkDestroyImageView(device, imageViews[i], nullptr);
+            vkDestroyImageView(device, imageViews[i], pAllocator);
 
-        vkDestroySwapchainKHR(device, windowData.Swapchain, nullptr);
+        vkDestroySwapchainKHR(device, windowData.Swapchain, pAllocator);
     }
 
     int VulkanPrototype::cleanupVulkan()
@@ -1322,7 +1322,8 @@ namespace VulkanPrototype
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+
         io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 14);
 
         ImGui::StyleColorsDark();
@@ -1346,11 +1347,11 @@ namespace VulkanPrototype
         init_info.CheckVkResultFn = evaluteVulkanResult;
         ImGui_ImplVulkan_Init(&init_info, windowData.RenderPass);
 
-        for(int i = 0; i < windowData.ImageCount; i++)
+        //Upload Fonts
         {
             // Use any command queue
             VkCommandPool command_pool = commandPool;
-            VkCommandBuffer command_buffer = commandBuffers[i];
+            VkCommandBuffer command_buffer = commandBuffers[0];
 
             result = vkResetCommandPool(device, command_pool, 0);
             evaluteVulkanResult(result);
@@ -1423,7 +1424,7 @@ namespace VulkanPrototype
         createDescriptorSets();
 
         createCommandBuffers(windowData);
-        recordCommandBuffers(commandBuffers, framebuffers, windowData);
+        //recordCommandBuffers(commandBuffers, framebuffers, windowData);
 
         createSemaphores();
 
@@ -1454,7 +1455,6 @@ namespace VulkanPrototype
 
             ImGui::Render();
             ImDrawData* draw_data = ImGui::GetDrawData();
-            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
 
             //drawFrame();
             frameRender(windowData, draw_data);
@@ -1586,7 +1586,7 @@ namespace VulkanPrototype
         createImageViews(windowData);
         createFramebuffers(windowData);
 
-        recordCommandBuffers(commandBuffers, framebuffers, windowData);
+        //recordCommandBuffers(commandBuffers, framebuffers, windowData);
     }
 
     void VulkanPrototype::recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd)
