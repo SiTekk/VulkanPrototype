@@ -77,6 +77,7 @@ namespace VulkanPrototype
         VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
         int cleanupGlfw();
+        void cleanupImGui();
         void cleanupSwapchain();
         int cleanupVulkan();
 

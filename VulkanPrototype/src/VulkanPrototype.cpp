@@ -95,6 +95,7 @@ namespace VulkanPrototype
         initializeVulkan();
         initializeImGui();
         mainLoop();
+        cleanupImGui();
         cleanupVulkan();
         cleanupGlfw();
         return 0;
@@ -217,6 +218,15 @@ namespace VulkanPrototype
         return 0;
     }
 
+    void VulkanPrototype::cleanupImGui()
+    {
+        vkDeviceWaitIdle(device);
+        
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
+
     void VulkanPrototype::cleanupSwapchain()
     {
         for (uint32_t i = 0; i < framebuffers.size(); i++)
@@ -244,6 +254,7 @@ namespace VulkanPrototype
         vkDestroyCommandPool(device, commandPool, pAllocator);
 
         vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
+        vkDestroyDescriptorPool(device, descriptorPoolImGui, pAllocator);
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 
         for (uint64_t i = 0; i < uniformBuffers.size(); i++) {
@@ -1230,6 +1241,16 @@ namespace VulkanPrototype
             vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
 
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, wd.Pipeline);
+
+        VkBuffer vertexBuffers[] = { vertexBuffer };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
         // Record dear imgui primitives into command buffer
         ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffers[imageIndex]);
 
@@ -1302,6 +1323,7 @@ namespace VulkanPrototype
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
+        io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 14);
 
         ImGui::StyleColorsDark();
 

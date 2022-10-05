@@ -365,7 +365,7 @@ FodyWeavers.xsd
 # Compiled Shader Files
 *.spv
 
-# Project Files
+# VS Project Files
 *.vcxproj
 *.vcxproj.user
 *.vcxproj.filters
@@ -385,3 +385,6 @@ imgui.ini
 
 # Executables
 *.exe
+
+# Compile Database
+compile_commands.json
