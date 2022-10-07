@@ -1143,7 +1143,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapchain();
+            recreateGraphicsPipelineAndSwapchain();
             return;
         }
 
@@ -1183,7 +1183,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            recreateSwapchain();
+            recreateGraphicsPipelineAndSwapchain();
         }
     }
 
@@ -1194,7 +1194,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapchain();
+            recreateGraphicsPipelineAndSwapchain();
             return;
         }
 
@@ -1290,7 +1290,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            recreateSwapchain();
+            recreateGraphicsPipelineAndSwapchain();
         }
     }
 
@@ -1575,11 +1575,14 @@ namespace VulkanPrototype
         }
     }
 
-    void VulkanPrototype::recreateSwapchain()
+    void VulkanPrototype::recreateGraphicsPipelineAndSwapchain()
     {
         vkDeviceWaitIdle(device);
 
         cleanupSwapchain();
+
+        vkDestroyPipelineLayout(device, pipelineLayout, pAllocator);
+        vkDestroyPipeline(device, windowData.Pipeline, pAllocator);
 
         int width = 0, height = 0;
         glfwGetFramebufferSize(window, &width, &height);
@@ -1590,6 +1593,9 @@ namespace VulkanPrototype
 
         createSwapchain(physicalDevice, windowData);
         createImageViews(windowData);
+
+        createGraphicsPipeline(windowData);
+
         createFramebuffers(windowData);
 
         //recordCommandBuffers(commandBuffers, framebuffers, windowData);

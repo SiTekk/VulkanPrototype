@@ -120,7 +120,7 @@ namespace VulkanPrototype
 
         void readFile(const std::string& filename, std::vector<char>& buffer);
 
-        void recreateSwapchain();
+        void recreateGraphicsPipelineAndSwapchain();
 
         void recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd);
 
