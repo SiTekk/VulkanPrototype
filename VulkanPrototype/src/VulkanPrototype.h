@@ -84,26 +84,26 @@ namespace VulkanPrototype
         void copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer);
 
         void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-        void createCommandBuffers(ImGui_ImplVulkanH_Window& wd);
-        void createCommandPool(ImGui_ImplVulkanH_Window& wd);
-        void createDescriptorPool(ImGui_ImplVulkanH_Window& wd);
+        void createCommandBuffers();
+        void createCommandPool();
+        void createDescriptorPool();
         void createDescriptorSetLayout();
         void createDescriptorSets();
-        void createFramebuffers(ImGui_ImplVulkanH_Window& wd);
-        void createGraphicsPipeline(ImGui_ImplVulkanH_Window& wd);
-        void createImageViews(ImGui_ImplVulkanH_Window& wd);
+        void createFramebuffers();
+        void createGraphicsPipeline();
+        void createImageViews();
         void createIndexBuffer();
         int createInstance();
         void createLogicalDevice(VkPhysicalDevice physicalDevice);
-        void createRenderPass(ImGui_ImplVulkanH_Window& wd);
+        void createRenderPass();
         void createSemaphores();
         void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule *shaderModule);
-        void createSwapchain(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
-        void createUniformBuffers(ImGui_ImplVulkanH_Window& wd);
+        void createSwapchain(VkPhysicalDevice physicalDevice);
+        void createUniformBuffers();
         void createVertexBuffer();
 
-        void drawFrame();
-        void frameRender(ImGui_ImplVulkanH_Window& wd, ImDrawData* draw_data);
+        void frameRender(ImDrawData* draw_data);
+        //add frameDraw function
 
         int initializeGlfw();
         int initializeImGui();
@@ -116,27 +116,23 @@ namespace VulkanPrototype
         QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
 
         //TODO: Maybe pass SurfaceDetails as rederence: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& surfaceDetails)
-        SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice, ImGui_ImplVulkanH_Window& wd);
+        SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice);
 
         void readFile(const std::string& filename, std::vector<char>& buffer);
 
         void recreateGraphicsPipelineAndSwapchain();
 
-        void recordCommandBuffers(std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFramebuffer>& framebuffers, ImGui_ImplVulkanH_Window& wd);
 
-        void updateUniformBuffer(uint32_t imageIndex, ImGui_ImplVulkanH_Window& wd);
+        void updateUniformBuffer(uint32_t imageIndex);
 
     private:
 
         float monitorScale; //Contains the scale of the monitor that has been set by the OS
-        GLFWwindow* window;
-        
-        //TODO: Replace ImGui_Impl with custom struct and add Extent2d
-        ImGui_ImplVulkanH_Window windowData;
+        VkExtent2D windowSize;
 
-        //TODO: Check if members should be outsourced to the imgui structs
-        //ImGui_ImplVulkanH_Frame vulkanFrames;
-        //ImGui_ImplVulkanH_FrameSemaphores frameSemaphores;
+        GLFWwindow* window;
+
+        uint32_t imageCount;
 
         //Buffers
         VkBuffer indexBuffer;
@@ -151,6 +147,13 @@ namespace VulkanPrototype
         VkDescriptorPool descriptorPoolImGui;
         VkDescriptorSetLayout descriptorSetLayout;
         std::vector<VkDescriptorSet> descriptorSets;
+
+        VkSwapchainKHR swapchain;
+        VkSurfaceKHR surface;
+        VkSurfaceFormatKHR surfaceFormat;
+        VkPresentModeKHR presentMode;
+        VkRenderPass renderPass;
+        VkPipeline pipeline;
 
         VkAllocationCallbacks *pAllocator = nullptr;
         VkCommandPool commandPool;
