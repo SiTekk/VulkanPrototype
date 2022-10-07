@@ -1313,6 +1313,12 @@ namespace VulkanPrototype
 
         window = glfwCreateWindow(windowData.Width, windowData.Height, "VulkanPrototype", nullptr, nullptr);
 
+        GLFWmonitor* primary = glfwGetPrimaryMonitor();
+        float xscale, yscale;
+        glfwGetMonitorContentScale(primary, &xscale, &yscale);
+
+        monitorScale = xscale > yscale ? xscale : yscale;
+
         return 0;
     }
 
@@ -1324,7 +1330,7 @@ namespace VulkanPrototype
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-        io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 14);
+        io.Fonts->AddFontFromFileTTF("assets/font/DroidSans.ttf", 16 * monitorScale);
 
         ImGui::StyleColorsDark();
 

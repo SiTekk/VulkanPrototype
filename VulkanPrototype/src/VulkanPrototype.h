@@ -128,6 +128,7 @@ namespace VulkanPrototype
 
     private:
 
+        float monitorScale; //Contains the scale of the monitor that has been set by the OS
         GLFWwindow* window;
         
         //TODO: Replace ImGui_Impl with custom struct and add Extent2d
