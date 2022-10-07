@@ -2,23 +2,61 @@
 
 namespace VulkanPrototype
 {
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
-    {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    /*
+    * Module Global Variables
+    */
+    static uint32_t imageCount = 0;
+    static float monitorScale = 0; //Contains the scale of the monitor that has been set by the OS
+    static VkExtent2D windowSize = {1600, 900};
 
-        return VK_FALSE;
-    }
+    static GLFWwindow* window = nullptr;
 
-    static void evaluteVulkanResult(VkResult result)
-    {
-        //TODO: Implement correct Program abortion
-        if (result != VK_SUCCESS)
-        {
-            std::cout << result << "\n";
-        }
-    }
+    //Set to custom allocator if needed
+    static VkAllocationCallbacks* pAllocator = nullptr;
 
-    static const std::vector<Vertex> vertices = 
+    //Buffers
+    static VkBuffer indexBuffer;
+    static VkDeviceMemory indexBufferMemory;
+    static VkBuffer vertexBuffer;
+    static VkDeviceMemory vertexBufferMemory;
+    static std::vector<VkBuffer> uniformBuffers;
+    static std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+    static std::vector<VkCommandBuffer> commandBuffers;
+    static std::vector<VkFramebuffer> framebuffers;
+    static std::vector<VkImageView> imageViews;
+
+    //Descriptors
+    static VkDescriptorPool descriptorPool;
+    static VkDescriptorPool descriptorPoolImGui;
+    static VkDescriptorSetLayout descriptorSetLayout;
+    static std::vector<VkDescriptorSet> descriptorSets;
+
+    //Platformspecific
+    static VkSwapchainKHR swapchain;
+    static VkSurfaceKHR surface;
+    static VkSurfaceFormatKHR surfaceFormat;
+    static VkPresentModeKHR presentMode;
+
+    //Core
+    static VkDevice device;
+    static VkInstance instance;
+    static VkRenderPass renderPass;
+    static VkPhysicalDevice physicalDevice;
+    static VkPipeline pipeline;
+    static VkPipelineLayout pipelineLayout;
+
+    static VkCommandPool commandPool;
+    static VkQueue queue;
+
+    static VkFence fenceInFlight;
+    //TODO: Check if multiple Semaphores should be used (Same amount as Command / Frame Buffers)
+    static VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
+ 
+    static QueueFamily queueFamily;
+
+    //Vertex Buffer
+    static const std::vector<Vertex> vertices =
     {
         {{-1.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
         {{0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}},
@@ -28,67 +66,98 @@ namespace VulkanPrototype
         {{0.0f, -0.5f}, {0.0f, 0.0f, 1.0f}},
         {{1.0f, -0.5f}, {1.0f, 0.0f, 1.0f}},
         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}
-    };
+};
 
     static const std::vector<uint16_t> indices =
     {
         0, 1, 2, 2, 3, 0, 4, 5, 6
     };
 
-    std::array<VkVertexInputAttributeDescription, 2> Vertex::getAttributeDescriptions()
+    /*
+    * Forward Declarations
+    */
+    bool checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions);
+    bool checkInstanceLayerSupport(std::vector<const char*> instanceLayers);
+
+    VkExtent2D chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities);
+    VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+
+    int cleanupGlfw();
+    void cleanupImGui();
+    void cleanupSwapchain();
+    int cleanupVulkan();
+
+    void copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer);
+
+    void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    void createCommandBuffers();
+    void createCommandPool();
+    void createDescriptorPool();
+    void createDescriptorSetLayout();
+    void createDescriptorSets();
+    void createFramebuffers();
+    void createGraphicsPipeline();
+    void createImageViews();
+    void createIndexBuffer();
+    int createInstance();
+    void createLogicalDevice(VkPhysicalDevice physicalDevice);
+    void createRenderPass();
+    void createSemaphores();
+    void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule);
+    void createSwapchain(VkPhysicalDevice physicalDevice);
+    void createUniformBuffers();
+    void createVertexBuffer();
+
+    void frameRender(ImDrawData* draw_data);
+    //add frameDraw function
+
+    int initializeGlfw();
+    int initializeImGui();
+    int initializeVulkan();
+
+    int mainLoop();
+
+    uint32_t pickMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    VkPhysicalDevice pickPhysicalDevice();
+    QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
+
+    //TODO: Maybe pass SurfaceDetails as rederence: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& aceDetails)
+    SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice);
+
+    void readFile(const std::string& filename, std::vector<char>& buffer);
+
+    void recreateGraphicsPipelineAndSwapchain();
+
+    void updateUniformBuffer(uint32_t imageIndex);
+
+    /*
+    * Debug Utils
+    */
+#ifdef DEBUG
+    static VkDebugUtilsMessengerEXT debugMessenger = nullptr;
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
     {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions {};
+        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        return attributeDescriptions;
+        return VK_FALSE;
     }
+#endif
 
-    VkVertexInputBindingDescription Vertex::getBindingDescription()
+    /*
+    * Function Implementations
+    */
+    static void evaluteVulkanResult(VkResult result)
     {
-        VkVertexInputBindingDescription bindingDescription = 
+        //TODO: Implement correct Program abortion
+        if (result != VK_SUCCESS)
         {
-            .binding = 0,
-            .stride = sizeof(Vertex),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-        };
-
-        return bindingDescription;
+            std::cout << result << "\n";
+        }
     }
 
-    VulkanPrototype::VulkanPrototype()
-    {
-        windowSize.width = 1600;
-        windowSize.height = 900;
-
-        window = nullptr;
-        commandPool = nullptr;
-        debugMessenger = nullptr;
-        device = nullptr;
-        instance = nullptr;
-        physicalDevice = nullptr;
-        pipelineLayout = nullptr;
-        queue = nullptr;
-        semaphoreImageAvailable = nullptr;
-        semaphoreRenderingDone = nullptr;
-        fenceInFlight = nullptr;
-        indexBuffer = nullptr;
-        indexBufferMemory = nullptr;
-        vertexBuffer = nullptr;
-        vertexBufferMemory = nullptr;
-        descriptorSetLayout = nullptr;
-        descriptorPool = nullptr;
-    }
-
-    int VulkanPrototype::Run()
+    int Run()
     {
         initializeGlfw();
         initializeVulkan();
@@ -100,7 +169,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    bool VulkanPrototype::checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions)
+    bool checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions)
     {
         uint32_t amountOfExtensions = 0;
         VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &amountOfExtensions, nullptr);
@@ -130,7 +199,7 @@ namespace VulkanPrototype
         return true;
     }
 
-    bool VulkanPrototype::checkInstanceLayerSupport(std::vector<const char *> instanceLayers)
+    bool checkInstanceLayerSupport(std::vector<const char *> instanceLayers)
     {
         uint32_t amountOfLayers = 0;
         VkResult result = vkEnumerateInstanceLayerProperties(&amountOfLayers, nullptr);
@@ -161,7 +230,7 @@ namespace VulkanPrototype
         return true;
     }
 
-    VkExtent2D VulkanPrototype::chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities)
+    VkExtent2D chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities)
     {
         if (capabilities.currentExtent.width != UINT32_MAX)
         {
@@ -185,11 +254,11 @@ namespace VulkanPrototype
         }
     }
 
-    VkPresentModeKHR VulkanPrototype::choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+    VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
     {
         for (const auto& availablePresentMode : availablePresentModes)
         {
-            if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
+            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             {
                 return availablePresentMode;
             }
@@ -198,7 +267,7 @@ namespace VulkanPrototype
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkSurfaceFormatKHR VulkanPrototype::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+    VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
     {
         for (const auto& availableFormat : availableFormats)
         {
@@ -211,13 +280,13 @@ namespace VulkanPrototype
         return availableFormats[0];
     }
 
-    int VulkanPrototype::cleanupGlfw()
+    int cleanupGlfw()
     {
         glfwDestroyWindow(window);
         return 0;
     }
 
-    void VulkanPrototype::cleanupImGui()
+    void cleanupImGui()
     {
         vkDeviceWaitIdle(device);
         
@@ -226,7 +295,7 @@ namespace VulkanPrototype
         ImGui::DestroyContext();
     }
 
-    void VulkanPrototype::cleanupSwapchain()
+    void cleanupSwapchain()
     {
         for (uint32_t i = 0; i < framebuffers.size(); i++)
             vkDestroyFramebuffer(device, framebuffers[i], pAllocator);
@@ -237,7 +306,7 @@ namespace VulkanPrototype
         vkDestroySwapchainKHR(device, swapchain, pAllocator);
     }
 
-    int VulkanPrototype::cleanupVulkan()
+    int cleanupVulkan()
     {
         vkDeviceWaitIdle(device);
 
@@ -280,7 +349,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    void VulkanPrototype::copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer)
+    void copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer)
     {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo =
         {
@@ -333,7 +402,7 @@ namespace VulkanPrototype
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     }
 
-    void VulkanPrototype::createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+    void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
     {
         VkResult result;
 
@@ -370,7 +439,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createCommandBuffers()
+    void createCommandBuffers()
     {
         VkResult result;
 
@@ -387,7 +456,7 @@ namespace VulkanPrototype
         result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
     }
 
-    void VulkanPrototype::createCommandPool()
+    void createCommandPool()
     {
         VkResult result;
 
@@ -404,7 +473,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createDescriptorPool()
+    void createDescriptorPool()
     {
         VkResult result;
 
@@ -456,7 +525,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createDescriptorSetLayout()
+    void createDescriptorSetLayout()
     {
         VkResult result;
 
@@ -482,7 +551,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createDescriptorSets()
+    void createDescriptorSets()
     {
         VkResult result;
 
@@ -527,7 +596,7 @@ namespace VulkanPrototype
         }
     }
 
-    void VulkanPrototype::createFramebuffers()
+    void createFramebuffers()
     {
         VkResult result;
 
@@ -552,7 +621,7 @@ namespace VulkanPrototype
         }
     }
 
-    void VulkanPrototype::createGraphicsPipeline()
+    void createGraphicsPipeline()
     {
         VkResult result;
 
@@ -746,7 +815,7 @@ namespace VulkanPrototype
         vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
     }
 
-    void VulkanPrototype::createImageViews()
+    void createImageViews()
     {
         VkResult result;
 
@@ -791,7 +860,7 @@ namespace VulkanPrototype
         }
     }
 
-    void VulkanPrototype::createIndexBuffer()
+    void createIndexBuffer()
     {
         uint64_t bufferSize = sizeof(indices[0]) * indices.size();
 
@@ -812,7 +881,7 @@ namespace VulkanPrototype
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    int VulkanPrototype::createInstance()
+    int createInstance()
     {
         VkResult result;
 
@@ -911,7 +980,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    void VulkanPrototype::createLogicalDevice(VkPhysicalDevice physicalDevice)
+    void createLogicalDevice(VkPhysicalDevice physicalDevice)
     {
         VkResult result;
 
@@ -956,7 +1025,7 @@ namespace VulkanPrototype
         vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
     }
 
-    void VulkanPrototype::createRenderPass()
+    void createRenderPass()
     {
         VkResult result;
 
@@ -1022,7 +1091,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createSemaphores()
+    void createSemaphores()
     {
         VkResult result;
 
@@ -1039,7 +1108,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule)
+    void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule)
     {
         VkShaderModuleCreateInfo shaderModuleCreateInfo =
         {
@@ -1054,7 +1123,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createSwapchain(VkPhysicalDevice physicalDevice)
+    void createSwapchain(VkPhysicalDevice physicalDevice)
     {
         VkResult result;
         SurfaceDetails surfaceDetails = querySurfaceCapabilities(physicalDevice);
@@ -1097,7 +1166,7 @@ namespace VulkanPrototype
         evaluteVulkanResult(result);
     }
 
-    void VulkanPrototype::createUniformBuffers()
+    void createUniformBuffers()
     {
         uint64_t bufferSize = sizeof(UniformBufferObject);
 
@@ -1109,7 +1178,7 @@ namespace VulkanPrototype
         }
     }
 
-    void VulkanPrototype::createVertexBuffer()
+    void createVertexBuffer()
     {
         VkResult result;
 
@@ -1132,7 +1201,7 @@ namespace VulkanPrototype
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void VulkanPrototype::frameRender(ImDrawData* draw_data)
+    void frameRender(ImDrawData* draw_data)
     {
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &imageIndex);
@@ -1239,7 +1308,7 @@ namespace VulkanPrototype
         }
     }
 
-    int VulkanPrototype::initializeGlfw()
+    int initializeGlfw()
     {
         if (!glfwInit())
         {
@@ -1267,7 +1336,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    int VulkanPrototype::initializeImGui()
+    int initializeImGui()
     {
         VkResult result;
 
@@ -1331,7 +1400,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    int VulkanPrototype::initializeVulkan()
+    int initializeVulkan()
     {
         VkResult result;
 
@@ -1389,7 +1458,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    int VulkanPrototype::mainLoop()
+    int mainLoop()
     {
         while (!glfwWindowShouldClose(window))
         {
@@ -1415,7 +1484,7 @@ namespace VulkanPrototype
         return 0;
     }
 
-    uint32_t VulkanPrototype::pickMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+    uint32_t pickMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
     {
         VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
@@ -1431,7 +1500,7 @@ namespace VulkanPrototype
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    VkPhysicalDevice VulkanPrototype::pickPhysicalDevice()
+    VkPhysicalDevice pickPhysicalDevice()
     {
         uint32_t amountOfPhysicalDevices = 0;
         VkResult result = vkEnumeratePhysicalDevices(instance, &amountOfPhysicalDevices, nullptr);
@@ -1455,7 +1524,7 @@ namespace VulkanPrototype
         return physicalDevices[0];
     }
 
-    QueueFamily VulkanPrototype::pickQueueFamily(VkPhysicalDevice physicalDevice)
+    QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice)
     {
         QueueFamily queueFamily;
 
@@ -1482,7 +1551,7 @@ namespace VulkanPrototype
         return queueFamily;
     }
 
-    SurfaceDetails VulkanPrototype::querySurfaceCapabilities(VkPhysicalDevice physicalDevice)
+    SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice)
     {
         SurfaceDetails surfaceDetails;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceDetails.capabilities);
@@ -1500,7 +1569,7 @@ namespace VulkanPrototype
         return surfaceDetails;
     }
 
-    void VulkanPrototype::readFile(const std::string& filename, std::vector<char>& buffer)
+    void readFile(const std::string& filename, std::vector<char>& buffer)
     {
         std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
@@ -1518,7 +1587,7 @@ namespace VulkanPrototype
         }
     }
 
-    void VulkanPrototype::recreateGraphicsPipelineAndSwapchain()
+    void recreateGraphicsPipelineAndSwapchain()
     {
         vkDeviceWaitIdle(device);
 
@@ -1542,7 +1611,7 @@ namespace VulkanPrototype
         createFramebuffers();
     }
 
-    void VulkanPrototype::updateUniformBuffer(uint32_t imageIndex)
+    void updateUniformBuffer(uint32_t imageIndex)
     {
         static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -1562,5 +1631,34 @@ namespace VulkanPrototype
         vkMapMemory(device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
         vkUnmapMemory(device, uniformBuffersMemory[imageIndex]);
+    }
+
+    std::array<VkVertexInputAttributeDescription, 2> Vertex::getAttributeDescriptions()
+    {
+        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        return attributeDescriptions;
+    }
+
+    VkVertexInputBindingDescription Vertex::getBindingDescription()
+    {
+        VkVertexInputBindingDescription bindingDescription =
+        {
+            .binding = 0,
+            .stride = sizeof(Vertex),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        };
+
+        return bindingDescription;
     }
 }

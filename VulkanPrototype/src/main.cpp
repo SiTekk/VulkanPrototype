@@ -2,8 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-    VulkanPrototype::VulkanPrototype vulkanPrototype;
-    vulkanPrototype.Run();
+    VulkanPrototype::Run();
 
     return 0;
 }
