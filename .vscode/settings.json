@@ -1,0 +1,26 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            //Update to ${workspaceFolder} when Makefile Tools have added variable substitution: https://github.com/microsoft/vscode-makefile-tools/issues/343
+            "cwd": "/home/simon/projects/VulkanPrototype/VulkanPrototype/",
+            "binaryPath": "/home/simon/projects/VulkanPrototype/out/bin/Debug/VulkanPrototype/VulkanPrototype",
+            "binaryArgs": []
+        },
+        {
+            "cwd": "/home/simon/projects/VulkanPrototype/VulkanPrototype/",
+            "binaryPath": "/home/simon/projects/VulkanPrototype/out/bin/Release/VulkanPrototype/VulkanPrototype",
+            "binaryArgs": []
+        }
+    ],
+
+    "makefile.configurations": [
+        {
+            "name": "Debug",
+            "makeArgs": ["config=debug"]
+        },
+        {
+            "name": "Release",
+            "makeArgs": ["config=release"]
+        }
+    ]
+}
