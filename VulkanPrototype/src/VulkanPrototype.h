@@ -33,7 +33,7 @@ namespace VulkanPrototype
 
     struct SurfaceDetails
     {
-        VkSurfaceCapabilitiesKHR capabilities;
+        VkSurfaceCapabilitiesKHR capabilities = {};
         std::vector<VkSurfaceFormatKHR> formats;
         std::vector<VkPresentModeKHR> presentModes;
     };
@@ -52,6 +52,23 @@ namespace VulkanPrototype
 
         static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions();
         static VkVertexInputBindingDescription getBindingDescription();
+    };
+
+    struct UBOValues
+    {
+        //Model
+        float angle;
+        int axis[3];
+
+        //View
+        int eye[3];
+        int center[3];
+        int up[3];
+
+        //Proj
+        float fovy;
+        float near;
+        float far;
     };
 
 

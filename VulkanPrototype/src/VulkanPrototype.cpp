@@ -5,6 +5,18 @@ namespace VulkanPrototype
     /*
     * Module Global Variables
     */
+    static UBOValues uboValues =
+    {
+        .angle = 60.f,
+        .axis = {0, 0, 1},
+        .eye = {1, 1, 1},
+        .center = {0, 0, 0},
+        .up = {0, 0, 1},
+        .fovy = 60.f,
+        .near = 0.1f,
+        .far = 10.f
+    };
+
     static uint32_t imageCount = 0;
     static float monitorScale = 0; //Contains the scale of the monitor that has been set by the OS
     static VkExtent2D windowSize = {1600, 900};
@@ -258,7 +270,7 @@ namespace VulkanPrototype
     {
         for (const auto& availablePresentMode : availablePresentModes)
         {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+            if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
             {
                 return availablePresentMode;
             }
@@ -1462,24 +1474,43 @@ namespace VulkanPrototype
     {
         while (!glfwWindowShouldClose(window))
         {
-            //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
+            //GlfwEvents
             glfwPollEvents();
 
+            //Setup ImGui
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::ShowDemoWindow();
+            //Game Logic
+            ImGui::Begin("My First Tool", nullptr, ImGuiWindowFlags_NoDecoration);
 
+            ImGui::Text("Settings for Unifor Buffer Object:");
+
+            ImGui::Text("Model:");
+            ImGui::SliderFloat("Angle", &uboValues.angle, 0.0f, 360.0f);
+            ImGui::InputInt3("Axis", uboValues.axis);
+
+            ImGui::Text("View:");
+            ImGui::InputInt3("Eye", uboValues.eye);
+            ImGui::InputInt3("Center", uboValues.center);
+            ImGui::InputInt3("Up", uboValues.up);
+
+            ImGui::Text("Project:");
+            ImGui::SliderFloat("Fovy", &uboValues.fovy, 0.0f, 360.0f);
+            ImGui::SliderFloat("Near", &uboValues.near, 0.0f, 20.0f);
+            ImGui::SliderFloat("Far", &uboValues.far, 0.0f, 20.0f);
+
+            ImGui::End();
+
+            //Render Data and record Command Buffers
             ImGui::Render();
             ImDrawData* draw_data = ImGui::GetDrawData();
 
             frameRender(draw_data);
-
-            //std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            //std::cout << 1000000 / std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count() << "[fps]\n";
         }
+
+        vkDeviceWaitIdle(device);
 
         return 0;
     }
@@ -1620,10 +1651,17 @@ namespace VulkanPrototype
 
         UniformBufferObject ubo =
         {
-            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(60.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .view = glm::lookAt(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-            .proj = glm::perspective(glm::radians(60.0f), static_cast<float>(windowSize.width) / static_cast<float>(windowSize.height), 0.1f, 10.0f)
+            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(uboValues.angle), glm::vec3((float)uboValues.axis[0], (float)uboValues.axis[1], (float)uboValues.axis[2])),
+            .view = glm::lookAt(glm::vec3((float)uboValues.eye[0], (float)uboValues.eye[1], (float)uboValues.eye[2]), glm::vec3((float)uboValues.center[0], (float)uboValues.center[1], (float)uboValues.center[2]), glm::vec3((float)uboValues.up[0], (float)uboValues.up[1], (float)uboValues.up[2])),
+            .proj = glm::perspective(glm::radians(uboValues.fovy), static_cast<float>(windowSize.width) / static_cast<float>(windowSize.height), uboValues.near, uboValues.far)
         };
+
+        //UniformBufferObject ubo =
+        //{
+        //    .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(60.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        //    .view = glm::lookAt(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        //    .proj = glm::perspective(glm::radians(60.0f), static_cast<float>(windowSize.width) / static_cast<float>(windowSize.height), 0.1f, 10.0f)
+        //};
 
         ubo.proj[1][1] *= -1;
 
