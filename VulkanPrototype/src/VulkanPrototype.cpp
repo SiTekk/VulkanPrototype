@@ -48,7 +48,6 @@ namespace VulkanPrototype
     static VkSwapchainKHR swapchain;
     static VkSurfaceKHR surface;
     static VkSurfaceFormatKHR surfaceFormat;
-    static VkPresentModeKHR presentMode;
 
     //Core
     static VkDevice device;
@@ -466,6 +465,7 @@ namespace VulkanPrototype
 
         commandBuffers.resize(imageCount);
         result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
+        evaluteVulkanResult(result);
     }
 
     void createCommandPool()
@@ -1201,7 +1201,8 @@ namespace VulkanPrototype
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
         void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        evaluteVulkanResult(result);
         memcpy(data, vertices.data(), bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 

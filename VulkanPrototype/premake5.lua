@@ -2,6 +2,7 @@ project "VulkanPrototype"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
+    warnings "Extra"
     targetdir ("../out/bin/" .. outputdir .. "/%{prj.name}")
     objdir ("../out/obj/" .. outputdir .. "/%{prj.name}")
 
