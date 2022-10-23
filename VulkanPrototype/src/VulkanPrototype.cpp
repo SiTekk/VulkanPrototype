@@ -1,5 +1,9 @@
 #include "VulkanPrototype.h"
 
+//Needs to be included here and not in header file
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 namespace VulkanPrototype
 {
     /*
@@ -33,6 +37,9 @@ namespace VulkanPrototype
     static VkDeviceMemory vertexBufferMemory;
     static std::vector<VkBuffer> uniformBuffers;
     static std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+    static VkImage textureImage;
+    static VkDeviceMemory textureImageMemory;
 
     static std::vector<VkCommandBuffer> commandBuffers;
     static std::vector<VkFramebuffer> framebuffers;
@@ -117,6 +124,7 @@ namespace VulkanPrototype
     void createSemaphores();
     void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule);
     void createSwapchain(VkPhysicalDevice physicalDevice);
+    void createTextureImage();
     void createUniformBuffers();
     void createVertexBuffer();
 
@@ -133,7 +141,7 @@ namespace VulkanPrototype
     VkPhysicalDevice pickPhysicalDevice();
     QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
 
-    //TODO: Maybe pass SurfaceDetails as rederence: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& aceDetails)
+    //TODO: Maybe pass SurfaceDetails as reference: void querySurfaceCapabilities(VkPhysicalDevice physicalDevice, SurfaceDetails& aceDetails)
     SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice);
 
     void readFile(const std::string& filename, std::vector<char>& buffer);
@@ -1167,7 +1175,7 @@ namespace VulkanPrototype
             .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices = nullptr,
-            .preTransform = surfaceDetails.capabilities.currentTransform,//VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
+            .preTransform = surfaceDetails.capabilities.currentTransform, //VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
             .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode = presentMode,
             .clipped = VK_TRUE,
@@ -1175,6 +1183,55 @@ namespace VulkanPrototype
         };
 
         result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
+        evaluteVulkanResult(result);
+    }
+
+    void createTextureImage()
+    {
+        VkResult result;
+
+        int texWidth, texHeight, texChannels;
+        stbi_uc* pixels = stbi_load("assets/textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+        VkDeviceSize imageSize = texWidth * texHeight * 4;
+        
+        if (!pixels) //TODO: Uncaracteristic Throw
+        {
+            throw std::runtime_error("failed to load texture image!");
+        }
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+
+        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        memcpy(data, pixels, static_cast<size_t>(imageSize));
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        stbi_image_free(pixels);
+
+        VkImageCreateInfo imageCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = VK_FORMAT_R8G8B8A8_SRGB,
+            .extent = { static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        result = vkCreateImage(device, &imageCreateInfo, pAllocator, &textureImage);
         evaluteVulkanResult(result);
     }
 
@@ -1448,6 +1505,8 @@ namespace VulkanPrototype
 
         createFramebuffers();
         createCommandPool();
+
+        createTextureImage();
 
         createVertexBuffer();
         createIndexBuffer();

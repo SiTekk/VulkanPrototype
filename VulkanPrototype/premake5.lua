@@ -17,6 +17,7 @@ project "VulkanPrototype"
             "../vendor/imgui/backends",
             "../vendor/glfw/include",
             "../vendor/glm",
+            "../vendor/stb",
 
             "%{VULKAN_INCLUDE}"
         }
@@ -41,7 +42,8 @@ project "VulkanPrototype"
         includedirs {
             "../vendor/imgui",
             "../vendor/imgui/backends",
-            "../vendor/glm"
+            "../vendor/glm",
+            "../vendor/stb"
         }
 
         links {
