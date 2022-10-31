@@ -78,19 +78,15 @@ namespace VulkanPrototype
     //Vertex Buffer
     static const std::vector<Vertex> vertices =
     {
-        {{-1.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-1.0f, 0.5f}, {1.0f, 1.0f, 1.0f}},
-
-        {{0.0f, -0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{1.0f, -0.5f}, {1.0f, 0.0f, 1.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
     static const std::vector<uint16_t> indices =
     {
-        0, 1, 2, 2, 3, 0, 4, 5, 6
+        0, 1, 2, 2, 3, 0
     };
 
     /*
@@ -470,10 +466,16 @@ namespace VulkanPrototype
     {
         VkResult result;
 
-        VkDescriptorPoolSize descriptorPoolSize =
+        VkDescriptorPoolSize descriptorPoolSize[] =
         {
-            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = imageCount
+            {
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = imageCount
+            },
+            {
+                .type = VK_DESCRIPTOR_TYPE_SAMPLER,
+                .descriptorCount = imageCount
+            }
         };
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
@@ -482,13 +484,14 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .flags = 0,
             .maxSets = imageCount,
-            .poolSizeCount = 1,
-            .pPoolSizes = &descriptorPoolSize
+            .poolSizeCount = 2,
+            .pPoolSizes = descriptorPoolSize
         };
 
         result = vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, pAllocator, &descriptorPool);
         evaluteVulkanResult(result);
 
+        //For ImGui only Dont Touch
         VkDescriptorPoolSize pool_sizes[] =
         {
             { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -522,13 +525,22 @@ namespace VulkanPrototype
     {
         VkResult result;
 
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBinding =
+        VkDescriptorSetLayoutBinding descriptorSetLayoutBinding[] =
         {
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = nullptr
+            {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .pImmutableSamplers = nullptr
+            },
+            {
+                .binding = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .pImmutableSamplers = nullptr
+            }
         };
 
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo =
@@ -536,8 +548,8 @@ namespace VulkanPrototype
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .bindingCount = 1,
-            .pBindings = &descriptorSetLayoutBinding
+            .bindingCount = 2,
+            .pBindings = descriptorSetLayoutBinding
         };
 
         result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
@@ -564,28 +576,49 @@ namespace VulkanPrototype
 
         for (uint32_t i = 0; i < imageCount; i++)
         {
-            VkDescriptorBufferInfo bufferInfo =
+            VkDescriptorBufferInfo descriptorBufferInfo =
             {
                 .buffer = uniformBuffers[i],
                 .offset = 0,
                 .range = sizeof(UniformBufferObject)
             };
 
-            VkWriteDescriptorSet writeDescriptorSet =
+            VkDescriptorImageInfo descriptorImageInfo =
             {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext = nullptr,
-                .dstSet = descriptorSets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pImageInfo = nullptr,
-                .pBufferInfo = &bufferInfo,
-                .pTexelBufferView = nullptr
+                .sampler = textureSampler,
+                .imageView = textureImageView,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             };
 
-            vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+            VkWriteDescriptorSet writeDescriptorSet[] =
+            {
+                {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext = nullptr,
+                    .dstSet = descriptorSets[i],
+                    .dstBinding = 0,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .pImageInfo = nullptr,
+                    .pBufferInfo = &descriptorBufferInfo,
+                    .pTexelBufferView = nullptr
+                },
+                {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext = nullptr,
+                    .dstSet = descriptorSets[i],
+                    .dstBinding = 1,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .pImageInfo = &descriptorImageInfo,
+                    .pBufferInfo = nullptr,
+                    .pTexelBufferView = nullptr
+                }
+            };
+
+            vkUpdateDescriptorSets(device, 2, writeDescriptorSet, 0, nullptr);
         }
     }
 
@@ -1224,7 +1257,7 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .flags = 0,
             .imageType = VK_IMAGE_TYPE_2D,
-            .format = surfaceFormat.format,
+            .format = VK_FORMAT_R8G8B8A8_SRGB,
             .extent = { static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight), 1},
             .mipLevels = 1,
             .arrayLayers = 1,
@@ -1248,7 +1281,7 @@ namespace VulkanPrototype
 
     void createTextureImageView()
     {
-        textureImageView = createImageView(textureImage, surfaceFormat.format);
+        textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
     }
 
     void createTextureSampler()
@@ -1845,7 +1878,6 @@ namespace VulkanPrototype
         endCommandBuffer(commandBuffer);
     }
 
-
     void updateUniformBuffer(uint32_t imageIndex)
     {
         static auto startTime = std::chrono::high_resolution_clock::now();
@@ -1875,9 +1907,9 @@ namespace VulkanPrototype
         vkUnmapMemory(device, uniformBuffersMemory[imageIndex]);
     }
 
-    std::array<VkVertexInputAttributeDescription, 2> Vertex::getAttributeDescriptions()
+    std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -1888,6 +1920,11 @@ namespace VulkanPrototype
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, textureCoordinate);
 
         return attributeDescriptions;
     }
