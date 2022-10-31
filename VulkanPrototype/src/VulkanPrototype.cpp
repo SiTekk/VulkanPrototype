@@ -39,7 +39,9 @@ namespace VulkanPrototype
     static std::vector<VkDeviceMemory> uniformBuffersMemory;
 
     static VkImage textureImage;
+    static VkImageView textureImageView;
     static VkDeviceMemory textureImageMemory;
+    static VkSampler textureSampler;
 
     static std::vector<VkCommandBuffer> commandBuffers;
     static std::vector<VkFramebuffer> framebuffers;
@@ -304,6 +306,8 @@ namespace VulkanPrototype
 
         cleanupSwapchain();
 
+        vkDestroySampler(device, textureSampler, pAllocator);
+        vkDestroyImageView(device, textureImageView, pAllocator);
         vkDestroyImage(device, textureImage, pAllocator);
         vkFreeMemory(device, textureImageMemory, pAllocator);
 
@@ -828,6 +832,42 @@ namespace VulkanPrototype
         vkBindImageMemory(device, image, imageMemory, 0);
     }
 
+    VkImageView createImageView(const VkImage image, const VkFormat format)
+    {
+        VkResult result;
+
+        VkImageViewCreateInfo imageViewCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .image = image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = format,
+            .components =
+            {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange =
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            },
+        };
+
+        VkImageView imageView;
+        result = vkCreateImageView(device, &imageViewCreateInfo, pAllocator, &imageView);
+        evaluteVulkanResult(result);
+
+        return imageView;
+    }
+
     void createImageViews()
     {
         VkResult result;
@@ -842,34 +882,7 @@ namespace VulkanPrototype
 
         for (uint32_t i = 0; i < imageCount; i++)
         {
-
-            VkImageViewCreateInfo imageViewCreateInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .image = swapchainImages[i],
-                .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                .format = surfaceFormat.format,
-                .components =
-                {
-                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .a = VK_COMPONENT_SWIZZLE_IDENTITY
-                },
-                .subresourceRange =
-                {
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1
-                }
-            };
-
-            result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageViews[i]);
-            evaluteVulkanResult(result);
+            imageViews[i] = createImageView(swapchainImages[i], surfaceFormat.format);
         }
     }
 
@@ -1013,9 +1026,11 @@ namespace VulkanPrototype
             .pQueuePriorities = queuePriorities.data()
         };
 
+        //TODO: Add a check if the features are available.
         VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
+        physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
 
-        //TODO: Device Extensions �berpr�fen.
+        //TODO: Adda a check if the Extensions are available.
         const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
         VkDeviceCreateInfo deviceCreateInfo =
@@ -1032,7 +1047,7 @@ namespace VulkanPrototype
             .pEnabledFeatures = &physicalDeviceFeatures
         };
 
-        result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
+        result = vkCreateDevice(physicalDevice, &deviceCreateInfo, pAllocator, &device);
         evaluteVulkanResult(result);
 
         vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
@@ -1209,7 +1224,7 @@ namespace VulkanPrototype
             .pNext = nullptr,
             .flags = 0,
             .imageType = VK_IMAGE_TYPE_2D,
-            .format = VK_FORMAT_R8G8B8A8_SRGB,
+            .format = surfaceFormat.format,
             .extent = { static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight), 1},
             .mipLevels = 1,
             .arrayLayers = 1,
@@ -1229,6 +1244,44 @@ namespace VulkanPrototype
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
+    }
+
+    void createTextureImageView()
+    {
+        textureImageView = createImageView(textureImage, surfaceFormat.format);
+    }
+
+    void createTextureSampler()
+    {
+        VkResult result;
+
+        VkPhysicalDeviceProperties physicalDeviceProperties{};
+        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
+        VkSamplerCreateInfo samplerCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .magFilter = VK_FILTER_LINEAR,
+            .minFilter = VK_FILTER_LINEAR,
+            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+            .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .mipLodBias = 0.f,
+            .anisotropyEnable = VK_TRUE,
+            .maxAnisotropy = physicalDeviceProperties.limits.maxSamplerAnisotropy,
+            .compareEnable = VK_FALSE,
+            .compareOp = VK_COMPARE_OP_ALWAYS,
+            .minLod = 0.f,
+            .maxLod = 0.f,
+            .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+            .unnormalizedCoordinates = VK_FALSE
+        };
+
+        result = vkCreateSampler(device, &samplerCreateInfo, pAllocator, &textureSampler);
+        evaluteVulkanResult(result);
     }
 
     void createUniformBuffers()
@@ -1518,7 +1571,6 @@ namespace VulkanPrototype
             return -1;
         }
 
-        //TODO: replace createSwapchain(), createImageViews(), createRenderPass() and createGraphicsPipeline() with ImGui impl
         createSwapchain(physicalDevice);
         createImageViews();
         createRenderPass();
@@ -1530,6 +1582,8 @@ namespace VulkanPrototype
         createCommandPool();
 
         createTextureImage();
+        createTextureImageView();
+        createTextureSampler();
 
         createVertexBuffer();
         createIndexBuffer();

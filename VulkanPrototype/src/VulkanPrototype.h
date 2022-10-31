@@ -110,6 +110,7 @@ namespace VulkanPrototype
     void createFramebuffers();
     void createGraphicsPipeline();
     void createImage(const VkImageCreateInfo &imageCreateInfo, VkImage& image, VkDeviceMemory& imageMemory);
+    VkImageView createImageView(const VkImage image, const VkFormat format);
     void createImageViews();
     void createIndexBuffer();
     int createInstance();
@@ -119,6 +120,8 @@ namespace VulkanPrototype
     void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule);
     void createSwapchain(VkPhysicalDevice physicalDevice);
     void createTextureImage();
+    void createTextureImageView();
+    void createTextureSampler();
     void createUniformBuffers();
     void createVertexBuffer();
 
