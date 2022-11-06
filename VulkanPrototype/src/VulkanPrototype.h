@@ -59,12 +59,11 @@ namespace VulkanPrototype
     {
         //Model
         float angle;
-        int axis[3];
+        glm::vec3 axis;
 
         //View
-        int eye[3];
-        int center[3];
-        int up[3];
+        glm::vec3 eye;
+        glm::vec3 center;
 
         //Proj
         float fovy;

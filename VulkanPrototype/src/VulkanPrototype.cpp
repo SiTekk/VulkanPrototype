@@ -12,10 +12,9 @@ namespace VulkanPrototype
     static UBOValues uboValues =
     {
         .angle = 60.f,
-        .axis = {0, 0, 1},
-        .eye = {1, 1, 1},
-        .center = {0, 0, 0},
-        .up = {0, 0, 1},
+        .axis = {0.f, 0.f, 1.f},
+        .eye = {1.f, 1.f, 1.f},
+        .center = {0.f, 0.f, 0.f},
         .fovy = 60.f,
         .near = 0.1f,
         .far = 10.f
@@ -1522,6 +1521,7 @@ namespace VulkanPrototype
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.IniFilename = nullptr;
 
         io.Fonts->AddFontFromFileTTF("assets/font/DroidSans.ttf", 16 * monitorScale);
 
@@ -1653,18 +1653,23 @@ namespace VulkanPrototype
             ImGui::NewFrame();
 
             //Game Logic
-            ImGui::Begin("My First Tool", nullptr, ImGuiWindowFlags_NoDecoration);
+            ImGui::Begin("My First Tool", nullptr, ImGuiWindowFlags_NoTitleBar);
 
             ImGui::Text("Settings for Unifor Buffer Object:");
 
             ImGui::Text("Model:");
-            ImGui::SliderFloat("Angle", &uboValues.angle, 0.0f, 360.0f);
-            ImGui::InputInt3("Axis", uboValues.axis);
+            ImGui::SliderFloat("Angle", &uboValues.angle, 0.0f, 360.0f, "%.2f", ImGuiSliderFlags_ClampOnInput);
+            ImGui::SliderFloat("Axis x", &uboValues.axis.x, -1.0f, 1.0f);
+            ImGui::SliderFloat("Axis y", &uboValues.axis.y, -1.0f, 1.0f);
+            ImGui::SliderFloat("Axis z", &uboValues.axis.z, -1.0f, 1.0f);
 
             ImGui::Text("View:");
-            ImGui::InputInt3("Eye", uboValues.eye);
-            ImGui::InputInt3("Center", uboValues.center);
-            ImGui::InputInt3("Up", uboValues.up);
+            ImGui::SliderFloat("Eye x", &uboValues.eye.x, -1.0f, 1.0f);
+            ImGui::SliderFloat("Eye y", &uboValues.eye.y, -1.0f, 1.0f);
+            ImGui::SliderFloat("Eye z", &uboValues.eye.z, -1.0f, 1.0f);
+            ImGui::SliderFloat("Center x", &uboValues.center.x, -5.0f, 5.0f);
+            ImGui::SliderFloat("Center y", &uboValues.center.y, -5.0f, 5.0f);
+            ImGui::SliderFloat("Center z", &uboValues.center.z, -5.0f, 5.0f);
 
             ImGui::Text("Project:");
             ImGui::SliderFloat("Fovy", &uboValues.fovy, 0.0f, 360.0f);
@@ -1672,6 +1677,8 @@ namespace VulkanPrototype
             ImGui::SliderFloat("Far", &uboValues.far, 0.0f, 20.0f);
 
             ImGui::End();
+
+            ImGui::ShowDemoWindow(nullptr);
 
             //Render Data and record Command Buffers
             ImGui::Render();
@@ -1880,15 +1887,17 @@ namespace VulkanPrototype
 
     void updateUniformBuffer(uint32_t imageIndex)
     {
-        static auto startTime = std::chrono::high_resolution_clock::now();
+        // static auto startTime = std::chrono::high_resolution_clock::now();
 
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        // auto currentTime = std::chrono::high_resolution_clock::now();
+        // float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        auto x = uboValues.center + uboValues.eye;
 
         UniformBufferObject ubo =
         {
-            .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(uboValues.angle), glm::vec3((float)uboValues.axis[0], (float)uboValues.axis[1], (float)uboValues.axis[2])),
-            .view = glm::lookAt(glm::vec3((float)uboValues.eye[0], (float)uboValues.eye[1], (float)uboValues.eye[2]), glm::vec3((float)uboValues.center[0], (float)uboValues.center[1], (float)uboValues.center[2]), glm::vec3((float)uboValues.up[0], (float)uboValues.up[1], (float)uboValues.up[2])),
+            .model = glm::rotate(glm::mat4(1.0f), glm::radians(uboValues.angle), uboValues.axis),
+            .view = glm::lookAt(uboValues.eye, uboValues.center, glm::vec3(0.0f, 0.0f, 1.0f)),
             .proj = glm::perspective(glm::radians(uboValues.fovy), static_cast<float>(windowSize.width) / static_cast<float>(windowSize.height), uboValues.near, uboValues.far)
         };
 
