@@ -21,10 +21,7 @@ namespace VulkanPrototype
     };
 
     static uint32_t imageCount = 0;
-    static float monitorScale = 0; //Contains the scale of the monitor that has been set by the OS
     static VkExtent2D windowSize = {1600, 900};
-
-    static GLFWwindow* window = nullptr;
 
     //Set to custom allocator if needed
     static VkAllocationCallbacks* pAllocator = nullptr;
@@ -116,13 +113,13 @@ namespace VulkanPrototype
 
     int Run()
     {
-        initializeGlfw();
+        Backend::Initialize(windowSize.width, windowSize.height);
         initializeVulkan();
         initializeImGui();
         mainLoop();
         cleanupImGui();
         cleanupVulkan();
-        cleanupGlfw();
+        Backend::Cleanup();
         return 0;
     }
 
@@ -224,7 +221,7 @@ namespace VulkanPrototype
         else
         {
             int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
+            glfwGetFramebufferSize(Backend::GetWindow(), &width, &height);
 
             VkExtent2D actualExtent =
             {
@@ -263,12 +260,6 @@ namespace VulkanPrototype
         }
 
         return availableFormats[0];
-    }
-
-    int cleanupGlfw()
-    {
-        glfwDestroyWindow(window);
-        return 0;
     }
 
     void cleanupImGui()
@@ -1486,34 +1477,6 @@ namespace VulkanPrototype
         }
     }
 
-    int initializeGlfw()
-    {
-        if (!glfwInit())
-        {
-            std::cerr << "Could not initalize GLFW!\n";
-            return -1;
-        }
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        if (!glfwVulkanSupported())
-        {
-            std::cerr << "GLFW: Vulkan not supported!\n";
-            return -1;
-        }
-
-        window = glfwCreateWindow(windowSize.width, windowSize.height, "VulkanPrototype", nullptr, nullptr);
-
-        GLFWmonitor* primary = glfwGetPrimaryMonitor();
-        float xscale, yscale;
-        glfwGetMonitorContentScale(primary, &xscale, &yscale);
-
-        monitorScale = xscale > yscale ? xscale : yscale;
-
-        return 0;
-    }
-
     int initializeImGui()
     {
         VkResult result;
@@ -1523,13 +1486,13 @@ namespace VulkanPrototype
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         io.IniFilename = nullptr;
 
-        io.Fonts->AddFontFromFileTTF("assets/font/DroidSans.ttf", 16 * monitorScale);
+        io.Fonts->AddFontFromFileTTF("assets/font/DroidSans.ttf", 16 * Backend::GetMonitorScale());
 
         ImGui::StyleColorsDark();
 
         IM_ASSERT(io.BackendPlatformUserData == NULL && "Already initialized a platform backend!");
 
-        ImGui_ImplGlfw_InitForVulkan(window, true);
+        ImGui_ImplGlfw_InitForVulkan(Backend::GetWindow(), true);
         ImGui_ImplVulkan_InitInfo init_info = {};
         init_info.Instance = instance;
         init_info.PhysicalDevice = physicalDevice;
@@ -1586,7 +1549,7 @@ namespace VulkanPrototype
         if (createInstance() != 0)
             return -1;
 
-        result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+        result = glfwCreateWindowSurface(instance, Backend::GetWindow(), nullptr, &surface);
         evaluteVulkanResult(result);
 
         physicalDevice = pickPhysicalDevice();
@@ -1642,7 +1605,7 @@ namespace VulkanPrototype
 
     int mainLoop()
     {
-        while (!glfwWindowShouldClose(window))
+        while (!glfwWindowShouldClose(Backend::GetWindow()))
         {
             //GlfwEvents
             glfwPollEvents();
@@ -1805,9 +1768,9 @@ namespace VulkanPrototype
         vkDestroyPipeline(device, pipeline, pAllocator);
 
         int width = 0, height = 0;
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(Backend::GetWindow(), &width, &height);
         while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(window, &width, &height);
+            glfwGetFramebufferSize(Backend::GetWindow(), &width, &height);
             glfwWaitEvents();
         }
 

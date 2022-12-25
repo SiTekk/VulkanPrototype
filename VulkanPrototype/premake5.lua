@@ -7,8 +7,8 @@ project "VulkanPrototype"
     objdir ("../out/obj/" .. outputdir .. "/%{prj.name}")
 
     files {
-        "src/*.h",
-        "src/*.cpp"
+        "src/**.h",
+        "src/**.cpp"
     }
 
     filter "system:windows"

@@ -21,6 +21,8 @@
 #include <optional>
 #include <vector>
 
+#include "Backend/Backend.h"
+
 #define VULKANPROTOTYPE_VERSION VK_MAKE_VERSION(0, 1, 0)
 
 namespace VulkanPrototype
@@ -93,7 +95,6 @@ namespace VulkanPrototype
     VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
-    int cleanupGlfw();
     void cleanupImGui();
     void cleanupSwapchain();
     int cleanupVulkan();
@@ -126,9 +127,8 @@ namespace VulkanPrototype
     void createVertexBuffer();
 
     void frameRender(ImDrawData* draw_data);
-    //add frameDraw function
+    // TODO: add frameDraw function
 
-    int initializeGlfw();
     int initializeImGui();
     int initializeVulkan();
 
@@ -148,7 +148,6 @@ namespace VulkanPrototype
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     void updateUniformBuffer(uint32_t imageIndex);
-
 }
 
-#endif
+#endif // VULKANPROTOTYPE_H
