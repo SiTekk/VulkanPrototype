@@ -1,10 +1,7 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-#include <iostream>
 
 namespace VulkanPrototype
 {
@@ -15,8 +12,7 @@ namespace VulkanPrototype
 
         float GetMonitorScale();
 
-        // TODO: Create Window Wrapper for different backends
-        GLFWwindow* GetWindow();
+        extern GLFWwindow* g_window;
     }
 }
 
