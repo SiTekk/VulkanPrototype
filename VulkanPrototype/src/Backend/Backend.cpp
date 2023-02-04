@@ -1,47 +1,50 @@
 #include "Backend.h"
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+#include <iostream>
+
 namespace VulkanPrototype
 {
-    static GLFWwindow* window;
-
-    int Backend::Initialize(int width, int height)
+    namespace Backend
     {
-        if (!glfwInit())
+        GLFWwindow* g_window = nullptr;
+
+        int Initialize(int width, int height)
         {
-            std::cerr << "Could not initalize GLFW!\n";
-            return -1;
+            if (!glfwInit())
+            {
+                std::cerr << "Could not initalize GLFW!\n";
+                return -1;
+            }
+
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+            if (!glfwVulkanSupported())
+            {
+                std::cerr << "GLFW: Vulkan not supported!\n";
+                return -1;
+            }
+
+            g_window = glfwCreateWindow(width, height, "VulkanPrototype", nullptr, nullptr);
+
+            return 0;
         }
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        if (!glfwVulkanSupported())
+        void Cleanup()
         {
-            std::cerr << "GLFW: Vulkan not supported!\n";
-            return -1;
+            glfwDestroyWindow(g_window);
         }
 
-        window = glfwCreateWindow(width, height, "VulkanPrototype", nullptr, nullptr);
+        float GetMonitorScale()
+        {
+            GLFWmonitor *primary = glfwGetPrimaryMonitor();
+            float xscale, yscale;
+            glfwGetMonitorContentScale(primary, &xscale, &yscale);
 
-        return 0;
-    }
-
-    void Backend::Cleanup()
-    {
-        glfwDestroyWindow(window);
-    }
-
-    float Backend::GetMonitorScale()
-    {
-        GLFWmonitor* primary = glfwGetPrimaryMonitor();
-        float xscale, yscale;
-        glfwGetMonitorContentScale(primary, &xscale, &yscale);
-
-        return xscale > yscale ? xscale : yscale;
-    }
-
-    GLFWwindow* Backend::GetWindow()
-    {
-        return window;
+            return xscale > yscale ? xscale : yscale;
+        }
     }
 }
