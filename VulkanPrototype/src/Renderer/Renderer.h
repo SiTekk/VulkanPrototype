@@ -76,8 +76,16 @@ namespace VulkanPrototype::Renderer
     /*
      * Global Variables
      */
-    extern VkExtent2D windowSize;
-    extern UBOValues uboValues;
+    extern VkExtent2D g_windowSize;
+    extern UBOValues g_uboValues;
+
+    /*
+     * Global Functions
+     */
+
+    void Cleanup();
+    int  Initialize();
+    void RenderFrame(ImDrawData* draw_data);
 
     /*
      * Private Functions
@@ -93,10 +101,6 @@ namespace VulkanPrototype::Renderer
     VkExtent2D chooseExtent2D(const VkSurfaceCapabilitiesKHR& capabilities);
     VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-
-    void cleanupImGui();
-    void cleanupSwapchain();
-    int cleanupVulkan();
 
     void copyBuffer(uint64_t size, VkBuffer srcBuffer, VkBuffer dstBuffer);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
@@ -124,12 +128,6 @@ namespace VulkanPrototype::Renderer
     void createTextureSampler();
     void createUniformBuffers();
     void createVertexBuffer();
-
-    void frameRender(ImDrawData* draw_data);
-    // TODO: add frameDraw function
-
-    int initializeImGui();
-    int initializeVulkan();
 
     uint32_t pickMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     VkPhysicalDevice pickPhysicalDevice();
