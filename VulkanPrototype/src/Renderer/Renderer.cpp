@@ -8,7 +8,7 @@ namespace VulkanPrototype::Renderer
     /*
     * Module Global Variables
     */
-    UBOValues uboValues =
+    UBOValues g_uboValues =
     {
         .angle = 60.f,
         .axis = {0.f, 0.f, 1.f},
@@ -19,7 +19,7 @@ namespace VulkanPrototype::Renderer
         .far = 10.f
     };
 
-    VkExtent2D windowSize = { 1600, 900 };
+    VkExtent2D g_windowSize = { 1600, 900 };
 
     static uint32_t imageCount = 0;
 
@@ -615,8 +615,8 @@ namespace VulkanPrototype::Renderer
                 .renderPass = renderPass,
                 .attachmentCount = 1,
                 .pAttachments = &(imageViews[i]),
-                .width = windowSize.width,
-                .height = windowSize.height,
+                .width = g_windowSize.width,
+                .height = g_windowSize.height,
                 .layers = 1
             };
 
@@ -698,8 +698,8 @@ namespace VulkanPrototype::Renderer
         {
             .x = 0.0f,
             .y = 0.0f,
-            .width = static_cast<float>(windowSize.width),
-            .height = static_cast<float>(windowSize.height),
+            .width = static_cast<float>(g_windowSize.width),
+            .height = static_cast<float>(g_windowSize.height),
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
@@ -707,7 +707,7 @@ namespace VulkanPrototype::Renderer
         VkRect2D scissor =
         {
             .offset = { 0, 0 },
-            .extent = windowSize
+            .extent = g_windowSize
         };
 
         VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
@@ -1169,7 +1169,7 @@ namespace VulkanPrototype::Renderer
 
         surfaceFormat = chooseSurfaceFormat(surfaceDetails.formats);
         VkPresentModeKHR presentMode = choosePresentMode(surfaceDetails.presentModes);
-        windowSize = chooseExtent2D(surfaceDetails.capabilities);
+        g_windowSize = chooseExtent2D(surfaceDetails.capabilities);
 
         uint32_t imageCount = surfaceDetails.capabilities.minImageCount + 1;
 
@@ -1188,7 +1188,7 @@ namespace VulkanPrototype::Renderer
             .minImageCount = imageCount,
             .imageFormat = surfaceFormat.format,
             .imageColorSpace = surfaceFormat.colorSpace,
-            .imageExtent = windowSize,
+            .imageExtent = g_windowSize,
             .imageArrayLayers = 1,
             .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
             .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -1356,113 +1356,6 @@ namespace VulkanPrototype::Renderer
         evaluteVulkanResult(result);
 
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-    }
-
-    void frameRender(ImDrawData* draw_data)
-    {
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &imageIndex);
-        evaluteVulkanResult(result);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateGraphicsPipelineAndSwapchain();
-            return;
-        }
-
-        updateUniformBuffer(imageIndex);
-
-        {
-            result = vkWaitForFences(device, 1, &fenceInFlight, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
-            evaluteVulkanResult(result);
-
-            result = vkResetFences(device, 1, &fenceInFlight);
-            evaluteVulkanResult(result);
-        }
-
-        {
-            result = vkResetCommandPool(device, commandPool, 0);
-            evaluteVulkanResult(result);
-
-            VkCommandBufferBeginInfo info =
-            {
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                .pNext = nullptr,
-                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-                .pInheritanceInfo = nullptr
-            };
-
-            result = vkBeginCommandBuffer(commandBuffers[imageIndex], &info);
-            evaluteVulkanResult(result);
-        }
-
-        {
-            VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-            VkRenderPassBeginInfo renderPassBeginInfo =
-            {
-                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                .pNext = nullptr,
-                .renderPass = renderPass,
-                .framebuffer = framebuffers[imageIndex],
-                .renderArea = {{0, 0}, windowSize},
-                .clearValueCount = 1,
-                .pClearValues = &clearValue
-            };
-
-            vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        }
-
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-        VkBuffer vertexBuffers[] = { vertexBuffer };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
-
-        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
-        // Record dear imgui primitives into command buffer
-        ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffers[imageIndex]);
-
-        // Submit command buffer
-        vkCmdEndRenderPass(commandBuffers[imageIndex]);
-
-        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        VkSubmitInfo submitInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &semaphoreImageAvailable,
-            .pWaitDstStageMask = waitStageMask,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &(commandBuffers[imageIndex]),
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &semaphoreRenderingDone
-        };
-
-        vkEndCommandBuffer(commandBuffers[imageIndex]);
-        vkQueueSubmit(queue, 1, &submitInfo, fenceInFlight);
-
-        VkPresentInfoKHR presentInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &semaphoreRenderingDone,
-            .swapchainCount = 1,
-            .pSwapchains = &swapchain,
-            .pImageIndices = &imageIndex,
-            .pResults = nullptr
-        };
-
-        result = vkQueuePresentKHR(queue, &presentInfo);
-        evaluteVulkanResult(result);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            recreateGraphicsPipelineAndSwapchain();
-        }
     }
 
     int initializeImGui()
@@ -1791,13 +1684,13 @@ namespace VulkanPrototype::Renderer
         // auto currentTime = std::chrono::high_resolution_clock::now();
         // float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        auto x = uboValues.center + uboValues.eye;
+        auto x = g_uboValues.center + g_uboValues.eye;
 
         UniformBufferObject ubo =
         {
-            .model = glm::rotate(glm::mat4(1.0f), glm::radians(uboValues.angle), uboValues.axis),
-            .view = glm::lookAt(uboValues.eye, uboValues.center, glm::vec3(0.0f, 0.0f, 1.0f)),
-            .proj = glm::perspective(glm::radians(uboValues.fovy), static_cast<float>(windowSize.width) / static_cast<float>(windowSize.height), uboValues.near, uboValues.far)
+            .model = glm::rotate(glm::mat4(1.0f), glm::radians(g_uboValues.angle), g_uboValues.axis),
+            .view = glm::lookAt(g_uboValues.eye, g_uboValues.center, glm::vec3(0.0f, 0.0f, 1.0f)),
+            .proj = glm::perspective(glm::radians(g_uboValues.fovy), static_cast<float>(g_windowSize.width) / static_cast<float>(g_windowSize.height), g_uboValues.near, g_uboValues.far)
         };
 
         //UniformBufferObject ubo =
@@ -1814,6 +1707,134 @@ namespace VulkanPrototype::Renderer
         memcpy(data, &ubo, sizeof(ubo));
         vkUnmapMemory(device, uniformBuffersMemory[imageIndex]);
     }
+
+    /*
+     * Global Functions
+     */
+    void Cleanup()
+    {
+        cleanupImGui();
+        cleanupVulkan();
+    }
+
+    int Initialize()
+    {
+        initializeVulkan();
+        initializeImGui();
+
+        return 0;
+    }
+
+    void RenderFrame(ImDrawData* draw_data)
+    {
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &imageIndex);
+        evaluteVulkanResult(result);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateGraphicsPipelineAndSwapchain();
+            return;
+        }
+
+        updateUniformBuffer(imageIndex);
+
+        {
+            result = vkWaitForFences(device, 1, &fenceInFlight, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
+            evaluteVulkanResult(result);
+
+            result = vkResetFences(device, 1, &fenceInFlight);
+            evaluteVulkanResult(result);
+        }
+
+        {
+            result = vkResetCommandPool(device, commandPool, 0);
+            evaluteVulkanResult(result);
+
+            VkCommandBufferBeginInfo info =
+            {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .pNext = nullptr,
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                .pInheritanceInfo = nullptr
+            };
+
+            result = vkBeginCommandBuffer(commandBuffers[imageIndex], &info);
+            evaluteVulkanResult(result);
+        }
+
+        {
+            VkClearValue clearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+            VkRenderPassBeginInfo renderPassBeginInfo =
+            {
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .pNext = nullptr,
+                .renderPass = renderPass,
+                .framebuffer = framebuffers[imageIndex],
+                .renderArea = {{0, 0}, g_windowSize},
+                .clearValueCount = 1,
+                .pClearValues = &clearValue
+            };
+
+            vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        }
+
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+        VkBuffer vertexBuffers[] = { vertexBuffer };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+        // Record dear imgui primitives into command buffer
+        ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffers[imageIndex]);
+
+        // Submit command buffer
+        vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+        VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreImageAvailable,
+            .pWaitDstStageMask = waitStageMask,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &(commandBuffers[imageIndex]),
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &semaphoreRenderingDone
+        };
+
+        vkEndCommandBuffer(commandBuffers[imageIndex]);
+        vkQueueSubmit(queue, 1, &submitInfo, fenceInFlight);
+
+        VkPresentInfoKHR presentInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &semaphoreRenderingDone,
+            .swapchainCount = 1,
+            .pSwapchains = &swapchain,
+            .pImageIndices = &imageIndex,
+            .pResults = nullptr
+        };
+
+        result = vkQueuePresentKHR(queue, &presentInfo);
+        evaluteVulkanResult(result);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            recreateGraphicsPipelineAndSwapchain();
+        }
+    }
+
+    /*
+     * Member Functions
+     */
 
     std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions()
     {
