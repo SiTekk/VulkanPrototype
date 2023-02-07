@@ -13,6 +13,10 @@
 
 namespace VulkanPrototype::Renderer
 {
+    /*
+    * Helper Structs for the Renderer
+    */
+
     struct QueueFamily
     {
         std::optional<uint32_t> index;

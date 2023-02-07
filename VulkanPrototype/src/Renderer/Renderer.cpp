@@ -1,13 +1,23 @@
 ﻿#include "Renderer.h"
 
+#include<vector>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "../Backend/Backend.h"
 
 namespace VulkanPrototype::Renderer
 {
     /*
     * Module Global Variables
     */
+
     UBOValues g_uboValues =
     {
         .angle = 60.f,
@@ -86,8 +96,19 @@ namespace VulkanPrototype::Renderer
     };
 
     /*
-    * Debug Utils
-    */
+     * Forward Declarations
+     */
+
+    void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule);
+    uint32_t pickMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    VkPhysicalDevice pickPhysicalDevice();
+    QueueFamily pickQueueFamily(VkPhysicalDevice physicalDevice);
+    SurfaceDetails querySurfaceCapabilities(VkPhysicalDevice physicalDevice);
+
+    /*
+     * Debug Utils
+     */
+
 #ifdef DEBUG
     static VkDebugUtilsMessengerEXT debugMessenger = nullptr;
 
@@ -100,8 +121,9 @@ namespace VulkanPrototype::Renderer
 #endif
 
     /*
-    * Function Implementations
-    */
+     * Private Utility Functions
+     */
+
     static void evaluteVulkanResult(VkResult result)
     {
         //TODO: Implement correct Program abortion
@@ -138,6 +160,121 @@ namespace VulkanPrototype::Renderer
         result = vkBeginCommandBuffer(*commandBuffer, &commandBufferBeginInfo);
         evaluteVulkanResult(result);
     }
+
+    void endCommandBuffer(VkCommandBuffer commandBuffer)
+    {
+        VkResult result;
+
+        result = vkEndCommandBuffer(commandBuffer);
+
+        VkSubmitInfo submitInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = nullptr,
+            .pWaitDstStageMask = nullptr,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer,
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = nullptr
+        };
+
+        result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+        evaluteVulkanResult(result);
+        result = vkQueueWaitIdle(queue);
+        evaluteVulkanResult(result);
+
+        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    }
+
+    void readFile(const std::string& filename, std::vector<char>& buffer)
+    {
+        std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+        if (file.is_open())
+        {
+            size_t fileSize = static_cast<size_t>(file.tellg());
+            file.seekg(0);
+            buffer.resize(fileSize);
+            file.read(buffer.data(), fileSize);
+            file.close();
+        }
+        else
+        {
+            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht ge�ffnet werden!");
+        }
+    }
+
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    {
+        VkCommandBuffer commandBuffer;
+        beginCommandBuffer(&commandBuffer);
+
+        VkImageMemoryBarrier imageMemoryBarrier =
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = 0,
+            .dstAccessMask = 0,
+            .oldLayout = oldLayout,
+            .newLayout = newLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = image,
+            .subresourceRange =
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+
+        VkPipelineStageFlags sourceStage;
+        VkPipelineStageFlags destinationStage;
+
+        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        {
+            imageMemoryBarrier.srcAccessMask = 0;
+            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else
+        {   //TODO: uncaracteristic throw
+            throw std::invalid_argument("unsupported layout transition!");
+        }
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            sourceStage,
+            destinationStage,
+            0,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            1,
+            &imageMemoryBarrier
+        );
+
+        endCommandBuffer(commandBuffer);
+    }
+
+    /*
+     * Private Functions
+     */
 
     bool checkInstanceExtensionSupport(std::vector<const char*> instanceExtensions)
     {
@@ -1331,33 +1468,6 @@ namespace VulkanPrototype::Renderer
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void endCommandBuffer(VkCommandBuffer commandBuffer)
-    {
-        VkResult result;
-
-        result = vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 0,
-            .pWaitSemaphores = nullptr,
-            .pWaitDstStageMask = nullptr,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &commandBuffer,
-            .signalSemaphoreCount = 0,
-            .pSignalSemaphores = nullptr
-        };
-
-        result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-        evaluteVulkanResult(result);
-        result = vkQueueWaitIdle(queue);
-        evaluteVulkanResult(result);
-
-        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-    }
-
     int initializeImGui()
     {
         VkResult result;
@@ -1569,24 +1679,6 @@ namespace VulkanPrototype::Renderer
         return surfaceDetails;
     }
 
-    void readFile(const std::string& filename, std::vector<char>& buffer)
-    {
-        std::ifstream file(filename, std::ios::binary | std::ios::ate);
-
-        if (file.is_open())
-        {
-            size_t fileSize = static_cast<size_t>(file.tellg());
-            file.seekg(0);
-            buffer.resize(fileSize);
-            file.read(buffer.data(), fileSize);
-            file.close();
-        }
-        else
-        {
-            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht ge�ffnet werden!");
-        }
-    }
-
     void recreateGraphicsPipelineAndSwapchain()
     {
         vkDeviceWaitIdle(device);
@@ -1609,72 +1701,6 @@ namespace VulkanPrototype::Renderer
         createGraphicsPipeline();
 
         createFramebuffers();
-    }
-
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
-    {
-        VkCommandBuffer commandBuffer;
-        beginCommandBuffer(&commandBuffer);
-
-        VkImageMemoryBarrier imageMemoryBarrier =
-        {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = 0,
-            .dstAccessMask = 0,
-            .oldLayout = oldLayout,
-            .newLayout = newLayout,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = image,
-            .subresourceRange =
-            {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            }
-        };
-
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-        {
-            imageMemoryBarrier.srcAccessMask = 0;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        }
-        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        {
-            imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        }
-        else
-        {   //TODO: uncaracteristic throw
-            throw std::invalid_argument("unsupported layout transition!");
-        }
-
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            sourceStage,
-            destinationStage,
-            0,
-            0,
-            nullptr,
-            0,
-            nullptr,
-            1,
-            &imageMemoryBarrier
-        );
-
-        endCommandBuffer(commandBuffer);
     }
 
     void updateUniformBuffer(uint32_t imageIndex)
