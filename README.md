@@ -1,6 +1,8 @@
 # Vulkan Prototype
 ## Resources
+- [How to Learn Vulkan](https://www.jeremyong.com/c++/vulkan/graphics/rendering/2018/03/26/how-to-learn-vulkan/)
 - [Vulkan-Tutorial](https://vulkan-tutorial.com/Introduction)  
+- [Intels Vulkan Tutorial](https://www.intel.com/content/www/us/en/developer/articles/training/api-without-secrets-introduction-to-vulkan-part-1.html)
 - [Uniform Buffers](https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/)  
 - [Modern 3d Graphics](https://paroj.github.io/gltut/)  
 - [Ray Tracing in One Weekend](https://github.com/RayTracing/raytracing.github.io)  
