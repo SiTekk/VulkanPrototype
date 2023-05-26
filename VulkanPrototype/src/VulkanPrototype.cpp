@@ -38,7 +38,7 @@ namespace VulkanPrototype
             ImGui::Text("Settings for Unifor Buffer Object:");
 
             ImGui::Text("Model:");
-            ImGui::SliderFloat("Angle", &Renderer::g_uboValues.angle, 0.0f, 360.0f, "%.2f", ImGuiSliderFlags_ClampOnInput);
+            ImGui::SliderFloat("Angle", &Renderer::g_uboValues.angle, 0.0f, 360.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
             ImGui::SliderFloat("Axis x", &Renderer::g_uboValues.axis.x, -1.0f, 1.0f);
             ImGui::SliderFloat("Axis y", &Renderer::g_uboValues.axis.y, -1.0f, 1.0f);
             ImGui::SliderFloat("Axis z", &Renderer::g_uboValues.axis.z, -1.0f, 1.0f);
