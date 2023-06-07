@@ -8,8 +8,6 @@ namespace VulkanPrototype
     /// </summary>
     /// <returns>Gibt nach erfolgreichem beenden 0 zurück.</returns>
     int Run();
-
-    int mainLoop();
 }
 
 #endif // VULKANPROTOTYPE_H

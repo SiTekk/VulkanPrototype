@@ -5,19 +5,10 @@
 
 namespace VulkanPrototype
 {
-    int Run()
+    void handleInputs(GLFWwindow* window)
     {
-        if (Backend::Initialize(Renderer::g_windowSize.width, Renderer::g_windowSize.height))
-            return 0;
-        if (Renderer::Initialize())
-            return 0;
-
-        mainLoop();
-
-        Renderer::Cleanup();
-        Backend::Cleanup();
-
-        return 0;
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
     }
 
     int mainLoop()
@@ -26,6 +17,7 @@ namespace VulkanPrototype
         {
             //GlfwEvents
             glfwPollEvents();
+            handleInputs(Backend::g_window);
 
             //Setup ImGui
             ImGui_ImplVulkan_NewFrame();
@@ -58,7 +50,7 @@ namespace VulkanPrototype
 
             ImGui::End();
 
-            ImGui::ShowDemoWindow(nullptr);
+            //ImGui::ShowDemoWindow(nullptr);
 
             //Render Data and record Command Buffers
             ImGui::Render();
@@ -68,6 +60,21 @@ namespace VulkanPrototype
         }
 
         //vkDeviceWaitIdle(device);
+
+        return 0;
+    }
+
+    int Run()
+    {
+        if (Backend::Initialize(Renderer::g_windowSize.width, Renderer::g_windowSize.height))
+            return 0;
+        if (Renderer::Initialize())
+            return 0;
+
+        mainLoop();
+
+        Renderer::Cleanup();
+        Backend::Cleanup();
 
         return 0;
     }

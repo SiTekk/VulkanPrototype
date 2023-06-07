@@ -1242,6 +1242,7 @@ namespace VulkanPrototype::Renderer
         //TODO: Add a check if the features are available.
         VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
         physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+        physicalDeviceFeatures.fillModeNonSolid = VK_TRUE;
 
         //TODO: Adda a check if the Extensions are available.
         const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
