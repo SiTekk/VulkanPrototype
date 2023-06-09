@@ -16,21 +16,27 @@
 namespace VulkanPrototype::Renderer
 {
     /*
-    * Module Global Variables
+    * Global Variables
     */
 
     UBOValues g_uboValues =
     {
-        .angle = 60.f,
+        .angle = 0.f,
         .axis = {0.f, 0.f, 1.f},
-        .eye = {1.f, 1.f, 1.f},
-        .center = {0.f, 0.f, 0.f},
+        .eye = {0.f, 0.f, 0.f},
+        .center = {0.f, 0.f, 1.f},
         .fovy = 60.f,
         .near = 0.1f,
         .far = 10.f
     };
 
     VkExtent2D g_windowSize = { 1600, 900 };
+
+    VkPolygonMode g_polygonMode = VK_POLYGON_MODE_FILL;
+
+    /*
+    * Module Global Variables
+    */
 
     static uint32_t imageCount = 0;
 
@@ -90,18 +96,24 @@ namespace VulkanPrototype::Renderer
     static const std::vector<Vertex> vertices =
     {
         {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+        {{0.5f, -0.5f, 0.0f}, {1.0f, .0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, .0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {1.0f, .0f, .0f}, {1.0f, 1.0f}},
+
+        {{-0.5f, -0.5f, 1.0f}, {.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f, 1.0f}, {0.0f, 1.0f, .0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f, 1.0f}, {.0f, 1.0f, .0f}, {1.0f, 1.0f}}
     };
 
     static const std::vector<uint16_t> indices =
     {
-        0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4
+        0, 2, 1, 0, 3, 2,
+        0, 7, 3, 0, 4, 7,
+        1, 4, 0, 1, 5, 4,
+        2, 5, 1, 2, 6, 5,
+        3, 6, 2, 3, 7, 6,
+        4, 6, 7, 4, 5, 6
     };
 
     /*
@@ -907,6 +919,7 @@ namespace VulkanPrototype::Renderer
             .pScissors = &scissor
         };
 
+        // TODO: Very important for Triangle face
         VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -914,7 +927,7 @@ namespace VulkanPrototype::Renderer
             .flags = 0,
             .depthClampEnable = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
-            .polygonMode = VK_POLYGON_MODE_FILL,
+            .polygonMode = g_polygonMode,
             .cullMode = VK_CULL_MODE_BACK_BIT,
             .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .depthBiasEnable = VK_FALSE,
@@ -1803,10 +1816,17 @@ namespace VulkanPrototype::Renderer
 
         UniformBufferObject ubo =
         {
-            .model = glm::rotate(glm::mat4(1.0f), glm::radians(g_uboValues.angle), g_uboValues.axis),
-            .view = glm::lookAt(g_uboValues.eye, g_uboValues.center, glm::vec3(0.0f, 0.0f, 1.0f)),
+            .model = glm::translate(glm::mat4(1.0f), g_uboValues.axis),
+            .view = glm::lookAt(g_uboValues.eye, g_uboValues.center, glm::vec3(0.0f, -1.0f, 0.0f)),
             .proj = glm::perspective(glm::radians(g_uboValues.fovy), static_cast<float>(g_windowSize.width) / static_cast<float>(g_windowSize.height), g_uboValues.near, g_uboValues.far)
         };
+
+        /*UniformBufferObject ubo =
+        {
+            .model = glm::rotate(glm::mat4(1.0f), glm::radians(g_uboValues.angle), glm::vec3(1.0f, 0.0f, 0.0f)),
+            .view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.5f)),
+            .proj = glm::perspective(glm::radians(60.0f), static_cast<float>(g_windowSize.width) / static_cast<float>(g_windowSize.height), 0.1f, 10.0f)
+        };*/
 
         //UniformBufferObject ubo =
         //{

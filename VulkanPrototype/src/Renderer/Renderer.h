@@ -30,12 +30,15 @@ namespace VulkanPrototype::Renderer
     int  Initialize();
     void RenderFrame(ImDrawData* draw_data);
 
+    void recreateGraphicsPipelineAndSwapchain();
+
     /*
      * Global Variables
      */
 
     extern VkExtent2D g_windowSize;
     extern UBOValues g_uboValues;
+    extern VkPolygonMode g_polygonMode;
 }
 
 #endif // RENDERER_H

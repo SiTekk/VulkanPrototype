@@ -8,6 +8,8 @@ layout(location = 1) in vec2 fragTextureCoordinate;
 
 layout(location = 0) out vec4 outColor;
 
-void main() {
-    outColor = texture(textureSampler, fragTextureCoordinate);
-}
+void main()
+{
+    // outColor = texture(textureSampler, fragTextureCoordinate) * vec4(fragColor, 1.0);
+    outColor = vec4(fragColor, 1.0);
+}   

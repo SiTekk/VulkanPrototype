@@ -30,7 +30,7 @@ namespace VulkanPrototype
             ImGui::Text("Settings for Unifor Buffer Object:");
 
             ImGui::Text("Model:");
-            ImGui::SliderFloat("Angle", &Renderer::g_uboValues.angle, 0.0f, 360.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+            ImGui::SliderFloat("Angle", &Renderer::g_uboValues.angle, -360.0f, 360.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
             ImGui::SliderFloat("Axis x", &Renderer::g_uboValues.axis.x, -1.0f, 1.0f);
             ImGui::SliderFloat("Axis y", &Renderer::g_uboValues.axis.y, -1.0f, 1.0f);
             ImGui::SliderFloat("Axis z", &Renderer::g_uboValues.axis.z, -1.0f, 1.0f);
@@ -47,6 +47,13 @@ namespace VulkanPrototype
             ImGui::SliderFloat("Fovy", &Renderer::g_uboValues.fovy, 0.0f, 360.0f);
             ImGui::SliderFloat("Near", &Renderer::g_uboValues.near, 0.0f, 20.0f);
             ImGui::SliderFloat("Far", &Renderer::g_uboValues.far, 0.0f, 20.0f);
+
+            static bool check = false;
+            if (ImGui::Checkbox("Enable Polygon Mode Line", &check))
+            {
+                Renderer::g_polygonMode = check ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+                Renderer::recreateGraphicsPipelineAndSwapchain();
+            }
 
             ImGui::End();
 
