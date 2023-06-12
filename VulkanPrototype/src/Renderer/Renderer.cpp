@@ -81,6 +81,7 @@ namespace VulkanPrototype::Renderer
     static VkRenderPass renderPass;
     static VkPhysicalDevice physicalDevice;
     static VkPipeline pipeline;
+    static VkPipeline wireframePipeline;
     static VkPipelineLayout pipelineLayout;
 
     static VkCommandPool commandPool;
@@ -116,6 +117,20 @@ namespace VulkanPrototype::Renderer
         4, 6, 7, 4, 5, 6
     };
 
+    glm::vec3 cubePositions[] =
+    {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(2.0f, 5.0f, 15.0f),
+        glm::vec3(-1.5f, -2.2f, 2.5f),
+        glm::vec3(-3.8f, -2.0f, 12.3f),
+        glm::vec3(2.4f, -0.4f, 3.5f),
+        glm::vec3(-1.7f, 3.0f, 7.5f),
+        glm::vec3(1.3f, -2.0f, 2.5f),
+        glm::vec3(1.5f, 2.0f, 2.5f),
+        glm::vec3(1.5f, 0.2f, 1.5f),
+        glm::vec3(-1.3f, 1.0f, 1.5f)
+    };
+
     /*
      * Forward Declarations
      */
@@ -137,6 +152,11 @@ namespace VulkanPrototype::Renderer
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
     {
+        // Unused parameter
+        (void)pUserData;
+        (void)messageType;
+        (void)messageSeverity;
+
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
         return VK_FALSE;
@@ -225,11 +245,11 @@ namespace VulkanPrototype::Renderer
         }
         else
         {
-            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht ge�ffnet werden!");
+            throw std::runtime_error("Datei \"" + filename + "\" konnte nicht geoeffnet werden!");
         }
     }
 
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    void transitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         VkCommandBuffer commandBuffer;
         beginCommandBuffer(&commandBuffer);
@@ -452,6 +472,7 @@ namespace VulkanPrototype::Renderer
         vkDestroyPipelineLayout(device, pipelineLayout, pAllocator);
         vkDestroyRenderPass(device, renderPass, pAllocator);
         vkDestroyPipeline(device, pipeline, pAllocator);
+        vkDestroyPipeline(device, wireframePipeline, pAllocator);
         vkDestroyCommandPool(device, commandPool, pAllocator);
 
         vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
@@ -548,7 +569,7 @@ namespace VulkanPrototype::Renderer
             .pQueueFamilyIndices = nullptr,
         };
 
-        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer);
+        result = vkCreateBuffer(device, &bufferCreateInfo, pAllocator, &buffer);
         evaluteVulkanResult(result);
 
         VkMemoryRequirements memoryRequirements;
@@ -562,7 +583,7 @@ namespace VulkanPrototype::Renderer
             .memoryTypeIndex = pickMemoryType(memoryRequirements.memoryTypeBits, properties)
         };
 
-        result = vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &bufferMemory);
+        result = vkAllocateMemory(device, &memoryAllocateInfo, pAllocator, &bufferMemory);
         evaluteVulkanResult(result);
 
         result = vkBindBufferMemory(device, buffer, bufferMemory, 0);
@@ -927,7 +948,7 @@ namespace VulkanPrototype::Renderer
             .flags = 0,
             .depthClampEnable = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
-            .polygonMode = g_polygonMode,
+            .polygonMode = VK_POLYGON_MODE_FILL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
             .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .depthBiasEnable = VK_FALSE,
@@ -1001,7 +1022,7 @@ namespace VulkanPrototype::Renderer
             .pPushConstantRanges = nullptr
         };
 
-        result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &pipelineLayout);
+        result = vkCreatePipelineLayout(device, &layoutCreateInfo, pAllocator, &pipelineLayout);
         evaluteVulkanResult(result);
 
         VkGraphicsPipelineCreateInfo pipelineCreateInfo =
@@ -1027,8 +1048,12 @@ namespace VulkanPrototype::Renderer
             .basePipelineIndex = -1
         };
 
-        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
+        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, pAllocator, &pipeline);
         evaluteVulkanResult(result);
+
+        // Wireframe Pipeline
+        rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_LINE;
+        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, pAllocator, &wireframePipeline);
 
         vkDestroyShaderModule(device, shaderModuleVert, nullptr);
         vkDestroyShaderModule(device, shaderModuleFrag, nullptr);
@@ -1362,7 +1387,7 @@ namespace VulkanPrototype::Renderer
             .pDependencies = &subpassDependency
         };
 
-        result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
+        result = vkCreateRenderPass(device, &renderPassCreateInfo, pAllocator, &renderPass);
         evaluteVulkanResult(result);
     }
 
@@ -1377,9 +1402,9 @@ namespace VulkanPrototype::Renderer
             .flags = 0
         };
 
-        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreImageAvailable);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, pAllocator, &semaphoreImageAvailable);
         evaluteVulkanResult(result);
-        result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphoreRenderingDone);
+        result = vkCreateSemaphore(device, &semaphoreCreateInfo, pAllocator, &semaphoreRenderingDone);
         evaluteVulkanResult(result);
     }
 
@@ -1394,7 +1419,7 @@ namespace VulkanPrototype::Renderer
             .pCode = reinterpret_cast<const uint32_t*>(shaderCode.data())
         };
 
-        VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, shaderModule);
+        VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, pAllocator, shaderModule);
         evaluteVulkanResult(result);
     }
 
@@ -1437,7 +1462,7 @@ namespace VulkanPrototype::Renderer
             .oldSwapchain = VK_NULL_HANDLE
         };
 
-        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
+        result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, pAllocator, &swapchain);
         evaluteVulkanResult(result);
     }
 
@@ -1485,12 +1510,12 @@ namespace VulkanPrototype::Renderer
         };
 
         createImage(imageCreateInfo, textureImage, textureImageMemory);
-        transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        transitionImageLayout(textureImage,  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
-        transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        transitionImageLayout(textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        vkDestroyBuffer(device, stagingBuffer, pAllocator);
+        vkFreeMemory(device, stagingBufferMemory, pAllocator);
     }
 
     void createTextureImageView()
@@ -1563,8 +1588,8 @@ namespace VulkanPrototype::Renderer
 
         copyBuffer(bufferSize, stagingBuffer, vertexBuffer);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        vkDestroyBuffer(device, stagingBuffer, pAllocator);
+        vkFreeMemory(device, stagingBufferMemory, pAllocator);
     }
 
     int initializeImGui()
@@ -1639,7 +1664,7 @@ namespace VulkanPrototype::Renderer
         if (createInstance() != 0)
             return -1;
 
-        result = glfwCreateWindowSurface(instance, Backend::g_window, nullptr, &surface);
+        result = glfwCreateWindowSurface(instance, Backend::g_window, pAllocator, &surface);
         evaluteVulkanResult(result);
 
         physicalDevice = pickPhysicalDevice();
@@ -1788,6 +1813,7 @@ namespace VulkanPrototype::Renderer
 
         vkDestroyPipelineLayout(device, pipelineLayout, pAllocator);
         vkDestroyPipeline(device, pipeline, pAllocator);
+        vkDestroyPipeline(device, wireframePipeline, pAllocator);
 
         int width = 0, height = 0;
         glfwGetFramebufferSize(Backend::g_window, &width, &height);
@@ -1867,25 +1893,19 @@ namespace VulkanPrototype::Renderer
         VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &imageIndex);
         evaluteVulkanResult(result);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
             recreateGraphicsPipelineAndSwapchain();
             return;
         }
 
-        updateUniformBuffer(imageIndex);
+        /*result = vkResetCommandPool(device, commandPool, 0);
+        evaluteVulkanResult(result);*/
+
+        result = vkResetCommandBuffer(commandBuffers[imageIndex], 0);
+        evaluteVulkanResult(result);
 
         {
-            result = vkWaitForFences(device, 1, &fenceInFlight, VK_TRUE, UINT64_MAX);    // wait indefinitely instead of periodically checking
-            evaluteVulkanResult(result);
-
-            result = vkResetFences(device, 1, &fenceInFlight);
-            evaluteVulkanResult(result);
-        }
-
-        {
-            result = vkResetCommandPool(device, commandPool, 0);
-            evaluteVulkanResult(result);
-
             VkCommandBufferBeginInfo info =
             {
                 .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -1898,7 +1918,7 @@ namespace VulkanPrototype::Renderer
             evaluteVulkanResult(result);
         }
 
-        {
+        { 
             std::array<VkClearValue, 2> clearValues{};
             clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
             clearValues[1].depthStencil = { 1.0f, 0 };
@@ -1917,7 +1937,10 @@ namespace VulkanPrototype::Renderer
             vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
 
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        updateUniformBuffer(imageIndex);
+
+        VkPipeline graphicsPipeline = g_polygonMode == VK_POLYGON_MODE_FILL ? pipeline : wireframePipeline;
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
         VkBuffer vertexBuffers[] = { vertexBuffer };
         VkDeviceSize offsets[] = { 0 };
@@ -1948,6 +1971,14 @@ namespace VulkanPrototype::Renderer
         };
 
         vkEndCommandBuffer(commandBuffers[imageIndex]);
+
+        // wait indefinitely instead of periodically checking
+        result = vkWaitForFences(device, 1, &fenceInFlight, VK_TRUE, UINT64_MAX);
+        evaluteVulkanResult(result);
+
+        result = vkResetFences(device, 1, &fenceInFlight);
+        evaluteVulkanResult(result);
+
         vkQueueSubmit(queue, 1, &submitInfo, fenceInFlight);
 
         VkPresentInfoKHR presentInfo =

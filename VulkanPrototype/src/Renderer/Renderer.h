@@ -30,8 +30,6 @@ namespace VulkanPrototype::Renderer
     int  Initialize();
     void RenderFrame(ImDrawData* draw_data);
 
-    void recreateGraphicsPipelineAndSwapchain();
-
     /*
      * Global Variables
      */

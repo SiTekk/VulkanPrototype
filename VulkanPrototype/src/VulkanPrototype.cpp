@@ -52,7 +52,6 @@ namespace VulkanPrototype
             if (ImGui::Checkbox("Enable Polygon Mode Line", &check))
             {
                 Renderer::g_polygonMode = check ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
-                Renderer::recreateGraphicsPipelineAndSwapchain();
             }
 
             ImGui::End();
