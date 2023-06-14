@@ -17,6 +17,16 @@ namespace VulkanPrototype::Renderer
     * Helper Structs for the Renderer
     */
 
+    struct FrameData
+    {
+        VkSemaphore     semaphoreImageAvailable;
+        VkSemaphore     semaphoreRenderingDone;
+        VkFence         fenceCommandBufferDone;
+
+        VkCommandPool   commandPool;
+        VkCommandBuffer mainCommandBuffer;
+    };
+
     struct QueueFamily
     {
         std::optional<uint32_t> index;

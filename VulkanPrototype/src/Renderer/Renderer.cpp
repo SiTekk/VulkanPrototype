@@ -43,6 +43,8 @@ namespace VulkanPrototype::Renderer
     //Set to custom allocator if needed
     static VkAllocationCallbacks* pAllocator = nullptr;
 
+    static std::vector<FrameData> frames;
+
     //Buffers
     static VkBuffer indexBuffer;
     static VkDeviceMemory indexBufferMemory;
@@ -60,7 +62,6 @@ namespace VulkanPrototype::Renderer
     static VkImageView depthImageView;
     static VkDeviceMemory depthImageMemory;
 
-    static std::vector<VkCommandBuffer> commandBuffers;
     static std::vector<VkFramebuffer> framebuffers;
     static std::vector<VkImageView> imageViews;
 
@@ -84,12 +85,7 @@ namespace VulkanPrototype::Renderer
     static VkPipeline wireframePipeline;
     static VkPipelineLayout pipelineLayout;
 
-    static VkCommandPool commandPool;
     static VkQueue queue;
-
-    static VkFence fenceInFlight;
-    //TODO: Check if multiple Semaphores should be used (Same amount as Command / Frame Buffers)
-    static VkSemaphore semaphoreImageAvailable, semaphoreRenderingDone;
 
     static QueueFamily queueFamily;
 
@@ -184,7 +180,7 @@ namespace VulkanPrototype::Renderer
         {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext = nullptr,
-            .commandPool = commandPool,
+            .commandPool = frames[0].commandPool,
             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .commandBufferCount = 1
         };
@@ -228,7 +224,7 @@ namespace VulkanPrototype::Renderer
         result = vkQueueWaitIdle(queue);
         evaluteVulkanResult(result);
 
-        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+        vkFreeCommandBuffers(device, frames[0].commandPool, 1, &commandBuffer);
     }
 
     void readFile(const std::string& filename, std::vector<char>& buffer)
@@ -458,9 +454,13 @@ namespace VulkanPrototype::Renderer
     {
         vkDeviceWaitIdle(device);
 
-        vkDestroySemaphore(device, semaphoreRenderingDone, pAllocator);
-        vkDestroySemaphore(device, semaphoreImageAvailable, pAllocator);
-        vkDestroyFence(device, fenceInFlight, pAllocator);
+        for (FrameData frame : frames)
+        {
+            vkDestroySemaphore(device, frame.semaphoreRenderingDone, pAllocator);
+            vkDestroySemaphore(device, frame.semaphoreImageAvailable, pAllocator);
+            vkDestroyFence(device, frame.fenceCommandBufferDone, pAllocator);
+            vkDestroyCommandPool(device, frame.commandPool, pAllocator);
+        }
 
         cleanupSwapchain();
 
@@ -473,7 +473,6 @@ namespace VulkanPrototype::Renderer
         vkDestroyRenderPass(device, renderPass, pAllocator);
         vkDestroyPipeline(device, pipeline, pAllocator);
         vkDestroyPipeline(device, wireframePipeline, pAllocator);
-        vkDestroyCommandPool(device, commandPool, pAllocator);
 
         vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
         vkDestroyDescriptorPool(device, descriptorPoolImGui, pAllocator);
@@ -587,41 +586,6 @@ namespace VulkanPrototype::Renderer
         evaluteVulkanResult(result);
 
         result = vkBindBufferMemory(device, buffer, bufferMemory, 0);
-        evaluteVulkanResult(result);
-    }
-
-    void createCommandBuffers()
-    {
-        VkResult result;
-
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext = nullptr,
-            .commandPool = commandPool,
-            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = imageCount
-        };
-
-        commandBuffers.resize(imageCount);
-        result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, commandBuffers.data());
-        evaluteVulkanResult(result);
-    }
-
-    void createCommandPool()
-    {
-        VkResult result;
-
-        //TODO: Check flags according to Vulkan Tutorial
-        VkCommandPoolCreateInfo commandPoolCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queueFamily.index.value()
-        };
-
-        result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
         evaluteVulkanResult(result);
     }
 
@@ -743,7 +707,7 @@ namespace VulkanPrototype::Renderer
             .pBindings = descriptorSetLayoutBinding
         };
 
-        result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout);
+        result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutInfo, pAllocator, &descriptorSetLayout);
         evaluteVulkanResult(result);
     }
 
@@ -841,6 +805,67 @@ namespace VulkanPrototype::Renderer
 
             result = vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &(framebuffers[i]));
             evaluteVulkanResult(result);
+        }
+    }
+
+    void createFrameData()
+    {
+        VkResult result;
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        };
+
+        VkFenceCreateInfo fenceCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+        };
+
+        //TODO: Check flags according to Vulkan Tutorial
+        VkCommandPoolCreateInfo commandPoolCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            .queueFamilyIndex = queueFamily.index.value()
+        };
+
+        frames.resize(imageCount);
+        for (int i = 0; i < imageCount; i++)
+        {
+            frames[i] = { };
+            // Semaphores
+            result = vkCreateSemaphore(device, &semaphoreCreateInfo, pAllocator, &frames[i].semaphoreImageAvailable);
+            evaluteVulkanResult(result);
+            result = vkCreateSemaphore(device, &semaphoreCreateInfo, pAllocator, &frames[i].semaphoreRenderingDone);
+            evaluteVulkanResult(result);
+
+            // Fence
+            result = vkCreateFence(device, &fenceCreateInfo, pAllocator, &frames[i].fenceCommandBufferDone);
+            evaluteVulkanResult(result);
+
+            // CommandPool
+            result = vkCreateCommandPool(device, &commandPoolCreateInfo, pAllocator, &frames[i].commandPool);
+            evaluteVulkanResult(result);
+
+            { // CommandBuffer
+                VkCommandBufferAllocateInfo commandBufferAllocateInfo =
+                {
+                    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                    .pNext = nullptr,
+                    .commandPool = frames[i].commandPool,
+                    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                    .commandBufferCount = 1
+                };
+
+                result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &frames[i].mainCommandBuffer);
+                evaluteVulkanResult(result);
+            }
         }
     }
 
@@ -1391,23 +1416,6 @@ namespace VulkanPrototype::Renderer
         evaluteVulkanResult(result);
     }
 
-    void createSemaphores()
-    {
-        VkResult result;
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0
-        };
-
-        result = vkCreateSemaphore(device, &semaphoreCreateInfo, pAllocator, &semaphoreImageAvailable);
-        evaluteVulkanResult(result);
-        result = vkCreateSemaphore(device, &semaphoreCreateInfo, pAllocator, &semaphoreRenderingDone);
-        evaluteVulkanResult(result);
-    }
-
     void createShaderModule(const std::vector<char>& shaderCode, VkShaderModule* shaderModule)
     {
         VkShaderModuleCreateInfo shaderModuleCreateInfo =
@@ -1627,8 +1635,8 @@ namespace VulkanPrototype::Renderer
         //Upload Fonts
         {
             // Use any command queue
-            VkCommandPool command_pool = commandPool;
-            VkCommandBuffer command_buffer = commandBuffers[0];
+            VkCommandPool command_pool = frames[0].commandPool;
+            VkCommandBuffer command_buffer = frames[0].mainCommandBuffer;
 
             result = vkResetCommandPool(device, command_pool, 0);
             evaluteVulkanResult(result);
@@ -1692,7 +1700,7 @@ namespace VulkanPrototype::Renderer
         createDepthResources();
 
         createFramebuffers();
-        createCommandPool();
+        createFrameData();
 
         createTextureImage();
         createTextureImageView();
@@ -1704,18 +1712,6 @@ namespace VulkanPrototype::Renderer
 
         createDescriptorPool();
         createDescriptorSets();
-
-        createCommandBuffers();
-
-        createSemaphores();
-
-        VkFenceCreateInfo fenceCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = VK_FENCE_CREATE_SIGNALED_BIT
-        };
-        vkCreateFence(device, &fenceCreateInfo, pAllocator, &fenceInFlight);
 
         return 0;
     }
@@ -1889,8 +1885,9 @@ namespace VulkanPrototype::Renderer
 
     void RenderFrame(ImDrawData* draw_data)
     {
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphoreImageAvailable, nullptr, &imageIndex);
+        static uint32_t imageIndex = 0;
+        static uint32_t frameNumber = 0;
+        VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, frames[frameNumber].semaphoreImageAvailable, nullptr, &imageIndex);
         evaluteVulkanResult(result);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -1899,10 +1896,17 @@ namespace VulkanPrototype::Renderer
             return;
         }
 
+        // wait indefinitely instead of periodically checking
+        result = vkWaitForFences(device, 1, &frames[frameNumber].fenceCommandBufferDone, VK_TRUE, UINT64_MAX);
+        evaluteVulkanResult(result);
+
+        result = vkResetFences(device, 1, &frames[frameNumber].fenceCommandBufferDone);
+        evaluteVulkanResult(result);
+
         /*result = vkResetCommandPool(device, commandPool, 0);
         evaluteVulkanResult(result);*/
 
-        result = vkResetCommandBuffer(commandBuffers[imageIndex], 0);
+        result = vkResetCommandBuffer(frames[frameNumber].mainCommandBuffer, 0);
         evaluteVulkanResult(result);
 
         {
@@ -1914,7 +1918,7 @@ namespace VulkanPrototype::Renderer
                 .pInheritanceInfo = nullptr
             };
 
-            result = vkBeginCommandBuffer(commandBuffers[imageIndex], &info);
+            result = vkBeginCommandBuffer(frames[frameNumber].mainCommandBuffer, &info);
             evaluteVulkanResult(result);
         }
 
@@ -1934,27 +1938,27 @@ namespace VulkanPrototype::Renderer
                 .pClearValues = clearValues.data()
             };
 
-            vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBeginRenderPass(frames[frameNumber].mainCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
 
         updateUniformBuffer(imageIndex);
 
         VkPipeline graphicsPipeline = g_polygonMode == VK_POLYGON_MODE_FILL ? pipeline : wireframePipeline;
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        vkCmdBindPipeline(frames[frameNumber].mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
         VkBuffer vertexBuffers[] = { vertexBuffer };
         VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+        vkCmdBindVertexBuffers(frames[frameNumber].mainCommandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(frames[frameNumber].mainCommandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindDescriptorSets(frames[frameNumber].mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
         // Record dear imgui primitives into command buffer
-        ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffers[imageIndex]);
+        ImGui_ImplVulkan_RenderDrawData(draw_data, frames[frameNumber].mainCommandBuffer);
 
         // Submit command buffer
-        vkCmdEndRenderPass(commandBuffers[imageIndex]);
+        vkCmdEndRenderPass(frames[frameNumber].mainCommandBuffer);
 
         VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         VkSubmitInfo submitInfo =
@@ -1962,31 +1966,24 @@ namespace VulkanPrototype::Renderer
             .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext = nullptr,
             .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &semaphoreImageAvailable,
+            .pWaitSemaphores = &frames[frameNumber].semaphoreImageAvailable,
             .pWaitDstStageMask = waitStageMask,
             .commandBufferCount = 1,
-            .pCommandBuffers = &(commandBuffers[imageIndex]),
+            .pCommandBuffers = &frames[frameNumber].mainCommandBuffer,
             .signalSemaphoreCount = 1,
-            .pSignalSemaphores = &semaphoreRenderingDone
+            .pSignalSemaphores = &frames[frameNumber].semaphoreRenderingDone
         };
 
-        vkEndCommandBuffer(commandBuffers[imageIndex]);
+        vkEndCommandBuffer(frames[frameNumber].mainCommandBuffer);
 
-        // wait indefinitely instead of periodically checking
-        result = vkWaitForFences(device, 1, &fenceInFlight, VK_TRUE, UINT64_MAX);
-        evaluteVulkanResult(result);
-
-        result = vkResetFences(device, 1, &fenceInFlight);
-        evaluteVulkanResult(result);
-
-        vkQueueSubmit(queue, 1, &submitInfo, fenceInFlight);
+        vkQueueSubmit(queue, 1, &submitInfo, frames[frameNumber].fenceCommandBufferDone);
 
         VkPresentInfoKHR presentInfo =
         {
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext = nullptr,
             .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &semaphoreRenderingDone,
+            .pWaitSemaphores = &frames[frameNumber].semaphoreRenderingDone,
             .swapchainCount = 1,
             .pSwapchains = &swapchain,
             .pImageIndices = &imageIndex,
@@ -1999,5 +1996,7 @@ namespace VulkanPrototype::Renderer
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
             recreateGraphicsPipelineAndSwapchain();
         }
+
+        frameNumber = (frameNumber + 1) % imageCount;
     }
 }
