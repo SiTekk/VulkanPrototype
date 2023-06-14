@@ -13,11 +13,12 @@ project "VulkanPrototype"
 
     filter "system:windows"
         includedirs {
-            "../vendor/imgui",
-            "../vendor/imgui/backends",
             "../vendor/glfw/include",
             "../vendor/glm",
+            "../vendor/imgui",
+            "../vendor/imgui/backends",
             "../vendor/stb",
+            "../vendor/VulkanMemoryAllocator/include",
 
             "%{VULKAN_INCLUDE}"
         }
