@@ -11,6 +11,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+// TODO: Update current allocation system for VMA
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
+
 #include "../Backend/Backend.h"
 
 namespace VulkanPrototype::Renderer
@@ -86,6 +90,9 @@ namespace VulkanPrototype::Renderer
     static VkPipelineLayout pipelineLayout;
 
     static VkQueue queue;
+
+    //Allocation
+    VmaAllocator vmaAllocator;
 
     static QueueFamily queueFamily;
 
@@ -460,6 +467,7 @@ namespace VulkanPrototype::Renderer
             vkDestroySemaphore(device, frame.semaphoreImageAvailable, pAllocator);
             vkDestroyFence(device, frame.fenceCommandBufferDone, pAllocator);
             vkDestroyCommandPool(device, frame.commandPool, pAllocator);
+            vmaDestroyBuffer(vmaAllocator, frame.uniformBuffer.buffer, frame.uniformBuffer.allocation);
         }
 
         cleanupSwapchain();
@@ -486,6 +494,8 @@ namespace VulkanPrototype::Renderer
         vkFreeMemory(device, indexBufferMemory, pAllocator);
         vkDestroyBuffer(device, vertexBuffer, pAllocator);
         vkFreeMemory(device, vertexBufferMemory, pAllocator);
+
+        vmaDestroyAllocator(vmaAllocator);
 
         vkDestroyDevice(device, pAllocator);
         vkDestroySurfaceKHR(instance, surface, pAllocator);
@@ -550,6 +560,34 @@ namespace VulkanPrototype::Renderer
         );
 
         endCommandBuffer(commandBuffer);
+    }
+
+    AllocatedBuffer createBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage, VkSharingMode sharingMode)
+    {
+        VkResult result;
+
+        VkBufferCreateInfo bufferCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .size = size,
+            .usage = usage,
+            .sharingMode = sharingMode,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr
+        };
+
+        VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
+        vmaAllocationCreateInfo.usage = memoryUsage;
+
+        AllocatedBuffer newBuffer;
+
+        //allocate the buffer
+        result = vmaCreateBuffer(vmaAllocator, &bufferCreateInfo, &vmaAllocationCreateInfo, &newBuffer.buffer, &newBuffer.allocation, nullptr);
+        evaluteVulkanResult(result);
+
+        return newBuffer;
     }
 
     void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
@@ -866,6 +904,9 @@ namespace VulkanPrototype::Renderer
                 result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &frames[i].mainCommandBuffer);
                 evaluteVulkanResult(result);
             }
+
+            // UniformBuffer
+            frames[i].uniformBuffer = createBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_SHARING_MODE_EXCLUSIVE);
         }
     }
 
@@ -1330,6 +1371,19 @@ namespace VulkanPrototype::Renderer
         vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
     }
 
+    void createMemoryAllocator()
+    {
+        VkResult result;
+
+        VmaAllocatorCreateInfo allocatorInfo = {};
+        allocatorInfo.physicalDevice = physicalDevice;
+        allocatorInfo.device = device;
+        allocatorInfo.instance = instance;
+
+        result = vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
+        evaluteVulkanResult(result);
+    }
+
     void createRenderPass()
     {
         VkResult result;
@@ -1679,6 +1733,8 @@ namespace VulkanPrototype::Renderer
 
         createLogicalDevice(physicalDevice);
 
+        createMemoryAllocator();
+
         VkBool32 surfaceSupport = false;
         result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), surface, &surfaceSupport);
         evaluteVulkanResult(result);
@@ -1693,8 +1749,8 @@ namespace VulkanPrototype::Renderer
         createSwapchain(physicalDevice);
         createImageViews();
         createRenderPass();
+        
         createDescriptorSetLayout();
-
         createGraphicsPipeline();
 
         createDepthResources();

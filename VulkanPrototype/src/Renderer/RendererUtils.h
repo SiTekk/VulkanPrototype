@@ -11,11 +11,19 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
+#include <vk_mem_alloc.h>
+
 namespace VulkanPrototype::Renderer
 {
     /*
     * Helper Structs for the Renderer
     */
+
+    struct AllocatedBuffer
+    {
+        VkBuffer buffer;
+        VmaAllocation allocation;
+    };
 
     struct FrameData
     {
@@ -25,6 +33,9 @@ namespace VulkanPrototype::Renderer
 
         VkCommandPool   commandPool;
         VkCommandBuffer mainCommandBuffer;
+
+        AllocatedBuffer uniformBuffer;
+        VkDescriptorSet descriptorSet;
     };
 
     struct QueueFamily
