@@ -11,10 +11,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// TODO: Update current allocation system for VMA
-#define VMA_IMPLEMENTATION
-#include <vk_mem_alloc.h>
-
 #include "../Backend/Backend.h"
 
 namespace VulkanPrototype::Renderer
@@ -50,12 +46,14 @@ namespace VulkanPrototype::Renderer
     static std::vector<FrameData> frames;
 
     //Buffers
-    static VkBuffer indexBuffer;
-    static VkDeviceMemory indexBufferMemory;
-    static VkBuffer vertexBuffer;
-    static VkDeviceMemory vertexBufferMemory;
-    static std::vector<VkBuffer> uniformBuffers;
-    static std::vector<VkDeviceMemory> uniformBuffersMemory;
+    //static VkBuffer indexBuffer;
+    //static VkDeviceMemory indexBufferMemory;
+    static AllocatedBuffer indexBuffer;
+    //static VkBuffer vertexBuffer;
+    //static VkDeviceMemory vertexBufferMemory;
+    static AllocatedBuffer vertexBuffer;
+    //static std::vector<VkBuffer> uniformBuffers;
+    //static std::vector<VkDeviceMemory> uniformBuffersMemory;
 
     static VkImage textureImage;
     static VkImageView textureImageView;
@@ -73,7 +71,7 @@ namespace VulkanPrototype::Renderer
     static VkDescriptorPool descriptorPool;
     static VkDescriptorPool descriptorPoolImGui;
     static VkDescriptorSetLayout descriptorSetLayout;
-    static std::vector<VkDescriptorSet> descriptorSets;
+    // static std::vector<VkDescriptorSet> descriptorSets;
 
     //Platformspecific
     static VkSwapchainKHR swapchain;
@@ -90,9 +88,6 @@ namespace VulkanPrototype::Renderer
     static VkPipelineLayout pipelineLayout;
 
     static VkQueue queue;
-
-    //Allocation
-    VmaAllocator vmaAllocator;
 
     static QueueFamily queueFamily;
 
@@ -461,13 +456,14 @@ namespace VulkanPrototype::Renderer
     {
         vkDeviceWaitIdle(device);
 
-        for (FrameData frame : frames)
+        for (FrameData& frame : frames)
         {
             vkDestroySemaphore(device, frame.semaphoreRenderingDone, pAllocator);
             vkDestroySemaphore(device, frame.semaphoreImageAvailable, pAllocator);
             vkDestroyFence(device, frame.fenceCommandBufferDone, pAllocator);
             vkDestroyCommandPool(device, frame.commandPool, pAllocator);
-            vmaDestroyBuffer(vmaAllocator, frame.uniformBuffer.buffer, frame.uniformBuffer.allocation);
+            vkDestroyBuffer(device, frame.uniformBuffer.buffer, pAllocator);
+            vkFreeMemory(device, frame.uniformBuffer.bufferMemory, pAllocator);
         }
 
         cleanupSwapchain();
@@ -486,16 +482,10 @@ namespace VulkanPrototype::Renderer
         vkDestroyDescriptorPool(device, descriptorPoolImGui, pAllocator);
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
 
-        for (uint64_t i = 0; i < uniformBuffers.size(); i++) {
-            vkDestroyBuffer(device, uniformBuffers[i], pAllocator);
-            vkFreeMemory(device, uniformBuffersMemory[i], pAllocator);
-        }
-        vkDestroyBuffer(device, indexBuffer, pAllocator);
-        vkFreeMemory(device, indexBufferMemory, pAllocator);
-        vkDestroyBuffer(device, vertexBuffer, pAllocator);
-        vkFreeMemory(device, vertexBufferMemory, pAllocator);
-
-        vmaDestroyAllocator(vmaAllocator);
+        vkDestroyBuffer(device, indexBuffer.buffer, pAllocator);
+        vkFreeMemory(device, indexBuffer.bufferMemory, pAllocator);
+        vkDestroyBuffer(device, vertexBuffer.buffer, pAllocator);
+        vkFreeMemory(device, vertexBuffer.bufferMemory, pAllocator);
 
         vkDestroyDevice(device, pAllocator);
         vkDestroySurfaceKHR(instance, surface, pAllocator);
@@ -562,35 +552,7 @@ namespace VulkanPrototype::Renderer
         endCommandBuffer(commandBuffer);
     }
 
-    AllocatedBuffer createBuffer(uint64_t size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage, VkSharingMode sharingMode)
-    {
-        VkResult result;
-
-        VkBufferCreateInfo bufferCreateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .size = size,
-            .usage = usage,
-            .sharingMode = sharingMode,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = nullptr
-        };
-
-        VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-        vmaAllocationCreateInfo.usage = memoryUsage;
-
-        AllocatedBuffer newBuffer;
-
-        //allocate the buffer
-        result = vmaCreateBuffer(vmaAllocator, &bufferCreateInfo, &vmaAllocationCreateInfo, &newBuffer.buffer, &newBuffer.allocation, nullptr);
-        evaluteVulkanResult(result);
-
-        return newBuffer;
-    }
-
-    void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+    void createBuffer(uint64_t size, VkBufferUsageFlags usage, VkSharingMode sharingMode, VkMemoryPropertyFlags properties, AllocatedBuffer& allocatedBuffer)
     {
         VkResult result;
 
@@ -606,11 +568,11 @@ namespace VulkanPrototype::Renderer
             .pQueueFamilyIndices = nullptr,
         };
 
-        result = vkCreateBuffer(device, &bufferCreateInfo, pAllocator, &buffer);
+        result = vkCreateBuffer(device, &bufferCreateInfo, pAllocator, &allocatedBuffer.buffer);
         evaluteVulkanResult(result);
 
         VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
+        vkGetBufferMemoryRequirements(device, allocatedBuffer.buffer, &memoryRequirements);
 
         VkMemoryAllocateInfo memoryAllocateInfo =
         {
@@ -620,10 +582,10 @@ namespace VulkanPrototype::Renderer
             .memoryTypeIndex = pickMemoryType(memoryRequirements.memoryTypeBits, properties)
         };
 
-        result = vkAllocateMemory(device, &memoryAllocateInfo, pAllocator, &bufferMemory);
+        result = vkAllocateMemory(device, &memoryAllocateInfo, pAllocator, &allocatedBuffer.bufferMemory);
         evaluteVulkanResult(result);
 
-        result = vkBindBufferMemory(device, buffer, bufferMemory, 0);
+        result = vkBindBufferMemory(device, allocatedBuffer.buffer, allocatedBuffer.bufferMemory, 0);
         evaluteVulkanResult(result);
     }
 
@@ -676,8 +638,8 @@ namespace VulkanPrototype::Renderer
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .maxSets = imageCount,
-            .poolSizeCount = 2,
+            .maxSets = imageCount * IM_ARRAYSIZE(descriptorPoolSize),
+            .poolSizeCount = (uint32_t)IM_ARRAYSIZE(descriptorPoolSize),
             .pPoolSizes = descriptorPoolSize
         };
 
@@ -753,25 +715,23 @@ namespace VulkanPrototype::Renderer
     {
         VkResult result;
 
-        std::vector<VkDescriptorSetLayout> layouts(imageCount, descriptorSetLayout);
         VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext = nullptr,
             .descriptorPool = descriptorPool,
-            .descriptorSetCount = imageCount,
-            .pSetLayouts = layouts.data()
+            .descriptorSetCount = 1,
+            .pSetLayouts = &descriptorSetLayout
         };
 
-        descriptorSets.resize(imageCount);
-        result = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, descriptorSets.data());
-        evaluteVulkanResult(result);
-
-        for (uint32_t i = 0; i < imageCount; i++)
+        for (FrameData& frameData : frames)
         {
+            result = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &frameData.descriptorSet);
+            evaluteVulkanResult(result);
+
             VkDescriptorBufferInfo descriptorBufferInfo =
             {
-                .buffer = uniformBuffers[i],
+                .buffer = frameData.uniformBuffer.buffer,
                 .offset = 0,
                 .range = sizeof(UniformBufferObject)
             };
@@ -788,7 +748,7 @@ namespace VulkanPrototype::Renderer
                 {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                     .pNext = nullptr,
-                    .dstSet = descriptorSets[i],
+                    .dstSet = frameData.descriptorSet,
                     .dstBinding = 0,
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
@@ -800,7 +760,7 @@ namespace VulkanPrototype::Renderer
                 {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                     .pNext = nullptr,
-                    .dstSet = descriptorSets[i],
+                    .dstSet = frameData.descriptorSet,
                     .dstBinding = 1,
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
@@ -904,9 +864,6 @@ namespace VulkanPrototype::Renderer
                 result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &frames[i].mainCommandBuffer);
                 evaluteVulkanResult(result);
             }
-
-            // UniformBuffer
-            frames[i].uniformBuffer = createBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_SHARING_MODE_EXCLUSIVE);
         }
     }
 
@@ -1207,21 +1164,21 @@ namespace VulkanPrototype::Renderer
     {
         uint64_t bufferSize = sizeof(indices[0]) * indices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        AllocatedBuffer stagingBuffer;
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
         void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        vkMapMemory(device, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, indices.data(), bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer);
 
-        copyBuffer(bufferSize, stagingBuffer, indexBuffer);
+        copyBuffer(bufferSize, stagingBuffer.buffer, indexBuffer.buffer);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        vkDestroyBuffer(device, stagingBuffer.buffer, pAllocator);
+        vkFreeMemory(device, stagingBuffer.bufferMemory, pAllocator);
     }
 
     int createInstance()
@@ -1369,19 +1326,6 @@ namespace VulkanPrototype::Renderer
         evaluteVulkanResult(result);
 
         vkGetDeviceQueue(device, queueFamily.index.value(), 0, &queue);
-    }
-
-    void createMemoryAllocator()
-    {
-        VkResult result;
-
-        VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.physicalDevice = physicalDevice;
-        allocatorInfo.device = device;
-        allocatorInfo.instance = instance;
-
-        result = vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
-        evaluteVulkanResult(result);
     }
 
     void createRenderPass()
@@ -1540,15 +1484,14 @@ namespace VulkanPrototype::Renderer
             throw std::runtime_error("failed to load texture image!");
         }
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        AllocatedBuffer stagingBuffer;
 
-        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
         void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        vkMapMemory(device, stagingBuffer.bufferMemory, 0, imageSize, 0, &data);
         memcpy(data, pixels, static_cast<size_t>(imageSize));
-        vkUnmapMemory(device, stagingBufferMemory);
+        vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
         stbi_image_free(pixels);
 
@@ -1573,11 +1516,11 @@ namespace VulkanPrototype::Renderer
 
         createImage(imageCreateInfo, textureImage, textureImageMemory);
         transitionImageLayout(textureImage,  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
+        copyBufferToImage(stagingBuffer.buffer, textureImage, static_cast<uint32_t>(textureWidth), static_cast<uint32_t>(textureHeight));
         transitionImageLayout(textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        vkDestroyBuffer(device, stagingBuffer, pAllocator);
-        vkFreeMemory(device, stagingBufferMemory, pAllocator);
+        vkDestroyBuffer(device, stagingBuffer.buffer, pAllocator);
+        vkFreeMemory(device, stagingBuffer.bufferMemory, pAllocator);
     }
 
     void createTextureImageView()
@@ -1622,11 +1565,8 @@ namespace VulkanPrototype::Renderer
     {
         uint64_t bufferSize = sizeof(UniformBufferObject);
 
-        uniformBuffers.resize(imageCount);
-        uniformBuffersMemory.resize(imageCount);
-
         for (uint64_t i = 0; i < imageCount; i++) {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frames[i].uniformBuffer);
         }
     }
 
@@ -1636,22 +1576,22 @@ namespace VulkanPrototype::Renderer
 
         uint64_t bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        AllocatedBuffer stagingBuffer;
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
         void* data;
-        result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        result = vkMapMemory(device, stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
         evaluteVulkanResult(result);
         memcpy(data, vertices.data(), bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer);
 
-        copyBuffer(bufferSize, stagingBuffer, vertexBuffer);
+        copyBuffer(bufferSize, stagingBuffer.buffer, vertexBuffer.buffer);
 
-        vkDestroyBuffer(device, stagingBuffer, pAllocator);
-        vkFreeMemory(device, stagingBufferMemory, pAllocator);
+        vkDestroyBuffer(device, stagingBuffer.buffer, pAllocator);
+        vkFreeMemory(device, stagingBuffer.bufferMemory, pAllocator);
     }
 
     int initializeImGui()
@@ -1732,8 +1672,6 @@ namespace VulkanPrototype::Renderer
         physicalDevice = pickPhysicalDevice();
 
         createLogicalDevice(physicalDevice);
-
-        createMemoryAllocator();
 
         VkBool32 surfaceSupport = false;
         result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.index.value(), surface, &surfaceSupport);
@@ -1916,9 +1854,9 @@ namespace VulkanPrototype::Renderer
         ubo.proj[1][1] *= -1;
 
         void* data;
-        vkMapMemory(device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
+        vkMapMemory(device, frames[imageIndex].uniformBuffer.bufferMemory, 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(device, uniformBuffersMemory[imageIndex]);
+        vkUnmapMemory(device, frames[imageIndex].uniformBuffer.bufferMemory);
     }
 
     /*
@@ -2002,11 +1940,11 @@ namespace VulkanPrototype::Renderer
         VkPipeline graphicsPipeline = g_polygonMode == VK_POLYGON_MODE_FILL ? pipeline : wireframePipeline;
         vkCmdBindPipeline(frames[frameNumber].mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        VkBuffer vertexBuffers[] = { vertexBuffer };
+        VkBuffer vertexBuffers[] = { vertexBuffer.buffer };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(frames[frameNumber].mainCommandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(frames[frameNumber].mainCommandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-        vkCmdBindDescriptorSets(frames[frameNumber].mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+        vkCmdBindIndexBuffer(frames[frameNumber].mainCommandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindDescriptorSets(frames[frameNumber].mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &frames[imageIndex].descriptorSet, 0, nullptr);
 
         vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 

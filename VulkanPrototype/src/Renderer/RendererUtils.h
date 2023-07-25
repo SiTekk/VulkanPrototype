@@ -11,8 +11,6 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
-#include <vk_mem_alloc.h>
-
 namespace VulkanPrototype::Renderer
 {
     /*
@@ -22,7 +20,7 @@ namespace VulkanPrototype::Renderer
     struct AllocatedBuffer
     {
         VkBuffer buffer;
-        VmaAllocation allocation;
+        VkDeviceMemory bufferMemory;
     };
 
     struct FrameData
