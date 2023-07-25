@@ -18,7 +18,6 @@ project "VulkanPrototype"
             "../vendor/imgui",
             "../vendor/imgui/backends",
             "../vendor/stb",
-            "../vendor/VulkanMemoryAllocator/include",
 
             "%{VULKAN_INCLUDE}"
         }

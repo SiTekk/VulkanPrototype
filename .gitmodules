@@ -14,7 +14,3 @@
 	path = vendor/stb
 	url = https://github.com/nothings/stb.git
 	branch = master
-[submodule "vendor/VulkanMemoryAllocator"]
-	path = vendor/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-	branch = master
