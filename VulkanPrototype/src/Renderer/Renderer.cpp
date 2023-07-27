@@ -464,6 +464,8 @@ namespace VulkanPrototype::Renderer
             vkDestroyCommandPool(device, frame.commandPool, pAllocator);
             vkDestroyBuffer(device, frame.uniformBuffer.buffer, pAllocator);
             vkFreeMemory(device, frame.uniformBuffer.bufferMemory, pAllocator);
+            vkDestroyBuffer(device, frame.objectBuffer.buffer, pAllocator);
+            vkFreeMemory(device, frame.objectBuffer.bufferMemory, pAllocator);
         }
 
         cleanupSwapchain();
