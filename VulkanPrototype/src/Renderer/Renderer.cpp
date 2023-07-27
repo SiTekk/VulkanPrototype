@@ -630,6 +630,10 @@ namespace VulkanPrototype::Renderer
             {
                 .type = VK_DESCRIPTOR_TYPE_SAMPLER,
                 .descriptorCount = imageCount
+            },
+            {
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = imageCount
             }
         };
 
@@ -695,6 +699,13 @@ namespace VulkanPrototype::Renderer
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
                 .pImmutableSamplers = nullptr
+            },
+            {
+                .binding = 2,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .pImmutableSamplers = nullptr
             }
         };
 
@@ -703,7 +714,7 @@ namespace VulkanPrototype::Renderer
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .bindingCount = 2,
+            .bindingCount = IM_ARRAYSIZE(descriptorSetLayoutBinding),
             .pBindings = descriptorSetLayoutBinding
         };
 
@@ -743,6 +754,13 @@ namespace VulkanPrototype::Renderer
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             };
 
+            VkDescriptorBufferInfo descriptorStorageBufferInfo =
+            {
+                .buffer = frameData.objectBuffer.buffer,
+                .offset = 0,
+                .range = sizeof(GameObjectData) * 1000
+            };
+
             VkWriteDescriptorSet writeDescriptorSet[] =
             {
                 {
@@ -768,10 +786,22 @@ namespace VulkanPrototype::Renderer
                     .pImageInfo = &descriptorImageInfo,
                     .pBufferInfo = nullptr,
                     .pTexelBufferView = nullptr
+                },
+                {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext = nullptr,
+                    .dstSet = frameData.descriptorSet,
+                    .dstBinding = 2,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .pImageInfo = nullptr,
+                    .pBufferInfo = &descriptorStorageBufferInfo,
+                    .pTexelBufferView = nullptr
                 }
             };
 
-            vkUpdateDescriptorSets(device, 2, writeDescriptorSet, 0, nullptr);
+            vkUpdateDescriptorSets(device, 3, writeDescriptorSet, 0, nullptr);
         }
     }
 
@@ -1305,13 +1335,20 @@ namespace VulkanPrototype::Renderer
         physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
         physicalDeviceFeatures.fillModeNonSolid = VK_TRUE;
 
-        //TODO: Adda a check if the Extensions are available.
+        //TODO: Add a check if the Extensions are available.
         const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+        VkPhysicalDeviceShaderDrawParametersFeatures shaderDrawParametersFeatures =
+        {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
+            .pNext = nullptr,
+            .shaderDrawParameters = VK_TRUE
+        };
 
         VkDeviceCreateInfo deviceCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = nullptr,
+            .pNext = &shaderDrawParametersFeatures,
             .flags = 0,
             .queueCreateInfoCount = 1,
             .pQueueCreateInfos = &deviceQueueCreateInfo,
@@ -1427,6 +1464,16 @@ namespace VulkanPrototype::Renderer
 
         VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, pAllocator, shaderModule);
         evaluteVulkanResult(result);
+    }
+
+    void createStorageBuffers()
+    {
+        uint64_t bufferSize = sizeof(GameObjectData) * 1000;
+
+        for (FrameData& frameData : frames)
+        {
+            createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.objectBuffer);
+        }
     }
 
     void createSwapchain(VkPhysicalDevice physicalDevice)
@@ -1703,6 +1750,7 @@ namespace VulkanPrototype::Renderer
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();
+        createStorageBuffers();
 
         createDescriptorPool();
         createDescriptorSets();
@@ -1853,10 +1901,31 @@ namespace VulkanPrototype::Renderer
 
         ubo.proj[1][1] *= -1;
 
-        void* data;
-        vkMapMemory(device, frames[imageIndex].uniformBuffer.bufferMemory, 0, sizeof(ubo), 0, &data);
-        memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(device, frames[imageIndex].uniformBuffer.bufferMemory);
+        {
+            void* data;
+            vkMapMemory(device, frames[imageIndex].uniformBuffer.bufferMemory, 0, sizeof(ubo), 0, &data);
+            memcpy(data, &ubo, sizeof(ubo));
+            vkUnmapMemory(device, frames[imageIndex].uniformBuffer.bufferMemory);
+        }
+
+        {
+            void* data;
+            vkMapMemory(device, frames[imageIndex].objectBuffer.bufferMemory, 0, sizeof(ubo), 0, &data);
+
+            GameObjectData* gameObjectData = (GameObjectData*)data;
+
+            gameObjectData[0].globalPosition = glm::vec3(-1, 1, -1);
+            gameObjectData[1].globalPosition = glm::vec3(0, 1, 0);
+            gameObjectData[2].globalPosition = glm::vec3(1, 1, 1);
+            gameObjectData[3].globalPosition = glm::vec3(-1, 0, -1);
+            gameObjectData[4].globalPosition = glm::vec3(0, 0, 0);
+            gameObjectData[5].globalPosition = glm::vec3(1, 0, 1);
+            gameObjectData[6].globalPosition = glm::vec3(-1, -1, -1);
+            gameObjectData[7].globalPosition = glm::vec3(0, -1, 0);
+            gameObjectData[8].globalPosition = glm::vec3(1, -1, 1);
+
+            vkUnmapMemory(device, frames[imageIndex].objectBuffer.bufferMemory);
+        }
     }
 
     /*
@@ -1947,6 +2016,14 @@ namespace VulkanPrototype::Renderer
         vkCmdBindDescriptorSets(frames[frameNumber].mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &frames[imageIndex].descriptorSet, 0, nullptr);
 
         vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 1);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 2);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 3);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 4);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 5);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 6);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 7);
+        vkCmdDrawIndexed(frames[frameNumber].mainCommandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 8);
 
         // Record dear imgui primitives into command buffer
         ImGui_ImplVulkan_RenderDrawData(draw_data, frames[frameNumber].mainCommandBuffer);

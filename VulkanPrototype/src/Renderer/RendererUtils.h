@@ -33,7 +33,14 @@ namespace VulkanPrototype::Renderer
         VkCommandBuffer mainCommandBuffer;
 
         AllocatedBuffer uniformBuffer;
+        AllocatedBuffer objectBuffer;
+
         VkDescriptorSet descriptorSet;
+    };
+
+    struct GameObjectData
+    {
+        glm::vec3 globalPosition;
     };
 
     struct QueueFamily
