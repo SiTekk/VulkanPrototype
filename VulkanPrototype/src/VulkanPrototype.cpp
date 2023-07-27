@@ -9,10 +9,68 @@ namespace VulkanPrototype
     {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
+
+        if (glfwGetKey(window, GLFW_KEY_W))
+        {
+            Renderer::g_uboValues.eye.z += 0.1;
+            Renderer::g_uboValues.center.z += 0.1;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_A))
+        {
+            Renderer::g_uboValues.eye.x -= 0.1;
+            Renderer::g_uboValues.center.x -= 0.1;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_S))
+        {
+            Renderer::g_uboValues.eye.z -= 0.1;
+            Renderer::g_uboValues.center.z -= 0.1;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_D))
+        {
+            Renderer::g_uboValues.eye.x += 0.1;
+            Renderer::g_uboValues.center.x += 0.1;
+        }
+
+        static double old_xpos = 0, old_ypos = 0;
+        double xpos = 0, ypos = 0;
+
+        glfwGetCursorPos(window, &xpos, &ypos);
+        Renderer::g_uboValues.center.x += sin(0.01 * (xpos - old_xpos));
+        Renderer::g_uboValues.center.y += sin(0.01 * (ypos - old_ypos));
+
+        old_xpos = xpos;
+        old_ypos = ypos;
+    }
+
+    void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+        if (key == GLFW_KEY_W && action)
+        {
+            Renderer::g_uboValues.eye.z += 0.1;
+            Renderer::g_uboValues.center.z += 0.1;
+        }
+        else if (key == GLFW_KEY_A && action)
+        {
+            Renderer::g_uboValues.eye.x -= 0.1;
+            Renderer::g_uboValues.center.x -= 0.1;
+        }
+        else if (key == GLFW_KEY_S && action)
+        {
+            Renderer::g_uboValues.eye.z -= 0.1;
+            Renderer::g_uboValues.center.z -= 0.1;
+        }
+        else if (key == GLFW_KEY_D && action)
+        {
+            Renderer::g_uboValues.eye.x += 0.1;
+            Renderer::g_uboValues.center.x += 0.1;
+        }
     }
 
     int mainLoop()
     {
+        //glfwSetKeyCallback(Backend::g_window, key_callback);
+        glfwSetInputMode(Backend::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
         while (!glfwWindowShouldClose(Backend::g_window))
         {
             //GlfwEvents
