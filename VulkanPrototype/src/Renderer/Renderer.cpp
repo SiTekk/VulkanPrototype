@@ -25,9 +25,10 @@ namespace VulkanPrototype::Renderer
         .axis = {0.f, 0.f, 1.f},
         .eye = {0.f, 0.f, 0.f},
         .center = {0.f, 0.f, 1.f},
+        .up = { 0.0f, -1.0f, 0.0f },
         .fovy = 60.f,
         .near = 0.1f,
-        .far = 10.f
+        .far = 1000.f
     };
 
     VkExtent2D g_windowSize = { 1600, 900 };
@@ -1883,7 +1884,7 @@ namespace VulkanPrototype::Renderer
         UniformBufferObject ubo =
         {
             .model = glm::translate(glm::mat4(1.0f), g_uboValues.axis),
-            .view = glm::lookAt(g_uboValues.eye, g_uboValues.center, glm::vec3(0.0f, -1.0f, 0.0f)),
+            .view = glm::lookAt(g_uboValues.eye, g_uboValues.center + g_uboValues.eye, g_uboValues.up),
             .proj = glm::perspective(glm::radians(g_uboValues.fovy), static_cast<float>(g_windowSize.width) / static_cast<float>(g_windowSize.height), g_uboValues.near, g_uboValues.far)
         };
 

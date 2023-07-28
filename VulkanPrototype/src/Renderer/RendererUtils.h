@@ -82,6 +82,7 @@ namespace VulkanPrototype::Renderer
         //View
         glm::vec3 eye;
         glm::vec3 center;
+        glm::vec3 up;
 
         //Proj
         float fovy;

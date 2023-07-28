@@ -1,5 +1,7 @@
 #include "VulkanPrototype.h"
 
+#include <chrono>
+
 #include "Backend/Backend.h"
 #include "Renderer/Renderer.h"
 
@@ -7,68 +9,86 @@ namespace VulkanPrototype
 {
     void handleInputs(GLFWwindow* window)
     {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, true);
+        static auto lastTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto deltaTime = currentTime - lastTime;
+
+        lastTime = currentTime;
 
         if (glfwGetKey(window, GLFW_KEY_W))
         {
-            Renderer::g_uboValues.eye.z += 0.1;
-            Renderer::g_uboValues.center.z += 0.1;
+            Renderer::g_uboValues.eye += deltaTime.count() * 0.00000001f * Renderer::g_uboValues.center;
         }
-        else if (glfwGetKey(window, GLFW_KEY_A))
+        if (glfwGetKey(window, GLFW_KEY_A))
         {
-            Renderer::g_uboValues.eye.x -= 0.1;
-            Renderer::g_uboValues.center.x -= 0.1;
+            Renderer::g_uboValues.eye -= deltaTime.count() * 0.00000001f * (glm::normalize(glm::cross( Renderer::g_uboValues.center, Renderer::g_uboValues.up)));
         }
-        else if (glfwGetKey(window, GLFW_KEY_S))
+        if (glfwGetKey(window, GLFW_KEY_S))
         {
-            Renderer::g_uboValues.eye.z -= 0.1;
-            Renderer::g_uboValues.center.z -= 0.1;
+            Renderer::g_uboValues.eye -= deltaTime.count() * 0.00000001f * Renderer::g_uboValues.center;
         }
-        else if (glfwGetKey(window, GLFW_KEY_D))
+        if (glfwGetKey(window, GLFW_KEY_D))
         {
-            Renderer::g_uboValues.eye.x += 0.1;
-            Renderer::g_uboValues.center.x += 0.1;
+            Renderer::g_uboValues.eye += deltaTime.count() * 0.00000001f * (glm::normalize(glm::cross(Renderer::g_uboValues.center, Renderer::g_uboValues.up)));
         }
-
-        static double old_xpos = 0, old_ypos = 0;
-        double xpos = 0, ypos = 0;
-
-        glfwGetCursorPos(window, &xpos, &ypos);
-        Renderer::g_uboValues.center.x += sin(0.01 * (xpos - old_xpos));
-        Renderer::g_uboValues.center.y += sin(0.01 * (ypos - old_ypos));
-
-        old_xpos = xpos;
-        old_ypos = ypos;
+        if (glfwGetKey(window, GLFW_KEY_SPACE))
+        {
+            Renderer::g_uboValues.eye -= deltaTime.count() * 0.00000001f * (glm::normalize(glm::cross(Renderer::g_uboValues.center, glm::cross(Renderer::g_uboValues.center, Renderer::g_uboValues.up))));
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL))
+        {
+            Renderer::g_uboValues.eye += deltaTime.count() * 0.00000001f * (glm::normalize(glm::cross(Renderer::g_uboValues.center, glm::cross(Renderer::g_uboValues.center, Renderer::g_uboValues.up))));
+        }
     }
 
     void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-        if (key == GLFW_KEY_W && action)
+        static int mouseMode = glfwGetInputMode(window, GLFW_CURSOR);
+
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
+
+        if (key == GLFW_KEY_E && action == GLFW_PRESS)
         {
-            Renderer::g_uboValues.eye.z += 0.1;
-            Renderer::g_uboValues.center.z += 0.1;
+            mouseMode ^= 2;
+            glfwSetInputMode(window, GLFW_CURSOR, mouseMode);
         }
-        else if (key == GLFW_KEY_A && action)
-        {
-            Renderer::g_uboValues.eye.x -= 0.1;
-            Renderer::g_uboValues.center.x -= 0.1;
-        }
-        else if (key == GLFW_KEY_S && action)
-        {
-            Renderer::g_uboValues.eye.z -= 0.1;
-            Renderer::g_uboValues.center.z -= 0.1;
-        }
-        else if (key == GLFW_KEY_D && action)
-        {
-            Renderer::g_uboValues.eye.x += 0.1;
-            Renderer::g_uboValues.center.x += 0.1;
-        }
+    }
+
+    void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+    {
+        static const float sensititvity = 0.1f;
+        static float old_xpos = 0, old_ypos = 0;
+        static float yaw = 0, pitch = 0;
+
+        float delta_x = (old_xpos - static_cast<float>(xpos)) * sensititvity;
+        float delta_y = (old_ypos - static_cast<float>(ypos)) * sensititvity;
+
+        old_xpos = static_cast<float>(xpos);
+        old_ypos = static_cast<float>(ypos);
+
+        if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+            return;
+
+        yaw += delta_x;
+        pitch += delta_y;
+
+        if (pitch > 89.0f)
+            pitch = 89.0f;
+        else if (pitch < -89.0f)
+            pitch = -89.0f;
+
+        glm::vec3 direction(0);
+
+        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        direction.y = -1.0f * sin(glm::radians(pitch));
+        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+
+        Renderer::g_uboValues.center = glm::normalize(direction);
     }
 
     int mainLoop()
     {
-        //glfwSetKeyCallback(Backend::g_window, key_callback);
         glfwSetInputMode(Backend::g_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         while (!glfwWindowShouldClose(Backend::g_window))
@@ -132,6 +152,12 @@ namespace VulkanPrototype
     {
         if (Backend::Initialize(Renderer::g_windowSize.width, Renderer::g_windowSize.height))
             return 0;
+
+        //TODO: Put Callbacks in specific function
+        //Needs to be before ImguiInit !!!
+        glfwSetKeyCallback(Backend::g_window, key_callback);
+        glfwSetCursorPosCallback(Backend::g_window, mouse_callback);
+
         if (Renderer::Initialize())
             return 0;
 
